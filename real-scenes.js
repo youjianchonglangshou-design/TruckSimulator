@@ -1,8 +1,9 @@
-/* Truck Simulator real-world scenes v2.8 | 2026-11-19
+/* Truck Simulator real-world scenes v3.1 | 2026-11-19
  * Add a scene by appending a descriptor to the returned array. IDs must be unique.
+ * Difficulty: set difficulty: 1 through 6 (6 = SSR) on each descriptor; omitted = 未評級.
  * Hooks: start(), goal(), obstacles(), collision(state), parked(state), bounds(point),
  * render({flat,box,localBox,containerBody}), guide(state), optional randomize(), info(),
- * witness() and signs(). All geometry is in metres, radians. Existing game physics
+ * witness(), coach() and signs(). All geometry is in metres, radians. Existing game physics
  * is passed into this factory. Scene file is loaded fresh on each page opening.
  * Keep the body and obstacle geometry in sync. Validate a complete control path first.
  */
@@ -21,6 +22,23 @@ function ns2Parked(s,i){let r=rear(s),g=ns2Goal(i);return Math.abs(r.x-g.x)<.43&
 function ns2Witness(i){let s={...ns2Start},path=[s];for(let [d,st] of [...ns2Main,...ns2Prefix,...ns2Plans[i]]){let m=Math.max(1,Math.ceil(Math.abs(d)/.08)),v=Math.sign(d);if(!v)continue;for(let k=0;k<m;k++){s=advance({...s,v,steer:st},{gear:v,throttle:1/(v===1?7:2.65),steer:st/.59},Math.abs(d)/m);path.push(s);}}path[path.length-1]={...s,v:0};return path;}
 function ns2Verify(){return ns2.bayX.map((_,i)=>{const path=ns2Witness(i),valid=ns2Parked(path.at(-1),i)&&!path.some(s=>ns2StaticHit(s));const eligible=valid?ns2.bayX.map((_,j)=>j).filter(j=>i!==j&&!path.some(s=>ns2StaticHit(s,[ns2Truck(j)],.22))):[];return {i,valid,eligible};});}
 function ns2Randomize(rng=Math.random){const choices=(ns2VerifiedLayouts??=ns2Verify()).filter(x=>x.valid);if(!choices.length)throw Error('NS2 no verified path');let chosen=choices[Math.min(choices.length-1,Math.floor(rng()*choices.length))];ns2Target=chosen.i;ns2Eligible=chosen.eligible.slice();let candidates=ns2Eligible.slice();for(let i=candidates.length-1;i>0;i--){let j=Math.floor(rng()*(i+1));[candidates[i],candidates[j]]=[candidates[j],candidates[i]];}const count=Math.min(candidates.length,Math.floor(rng()*4));ns2Occupied=candidates.slice(0,count);ns2Layout={target:ns2Target+1,eligible:ns2Eligible.map(i=>i+1),occupied:ns2Occupied.map(i=>i+1)};return ns2Layout;}
+// Coach uses normal 60 Hz advance() with bounded steering, throttle and brake.
+// NS2: convert the stored spatial witness into a repeatable low-speed manoeuvre.
+// At steering changes, stop first; this preserves tight clearances, rather than teleporting the truck.
+function ns2Coach(i){
+ const segments=[];for(const [d,st] of [...ns2Main,...ns2Prefix,...ns2Plans[i]]){const last=segments.at(-1);if(last&&Math.sign(last[0])===Math.sign(d)&&last[1]===st)last[0]+=d;else segments.push([d,st]);}
+ let s={...ns2Start},out=[];const dt=1/60;
+ function add(n,steer,gear,throttle,brake){if(!n)return;const last=out.at(-1);if(last&&last[1]===steer&&last[2]===gear&&last[3]===throttle&&last[4]===brake)last[0]+=n;else out.push([n,steer,gear,throttle,brake]);for(let k=0;k<n;k++)s=advance(s,{steer,gear,throttle,brake},dt);}
+ for(let j=0;j<segments.length;j++){const [d,st]=segments[j],g=Math.sign(d),u=st/.59,dist=Math.abs(d),vmax=g<0?.742:Math.abs(st)>.3?1.15:2.15;
+  const turnTicks=Math.ceil(Math.abs(s.steer-st)/(u?.75:1.05)*60)+1;add(turnTicks,u,g,0,true);
+  // Integrate scalar velocity with the exact same acceleration and brake rates.
+  function distance(n,t){let v=0,d=0;for(let k=0;k<n;k++){const next=Math.min(t,v+(g===1?1.7:1.25)*dt);d+=(v+next)*.5*dt;v=next;}while(v>0){const next=Math.max(0,v-5*dt);d+=(v+next)*.5*dt;v=next;}return d;}
+  let n=Math.max(1,Math.ceil(dist/vmax*60));while(distance(n,vmax)<dist)n++;let lo=0,hi=vmax;for(let k=0;k<36;k++){let mid=(lo+hi)/2;if(distance(n,mid)<dist)lo=mid;else hi=mid;}
+  const throttle=(lo+hi)/2/(g===1?7:2.65);add(n,u,g,throttle,false);add(Math.ceil(vmax/5*60)+1,u,g,0,true);
+ }
+ return out;
+}
+
 function ns2Obstacles(){return ns2Base.concat(ns2Occupied.map(ns2Truck));}
 
 function renderNS2({flat,box,localBox,containerBody}){const D=ns2;
@@ -45,9 +63,9 @@ for(let z=7;z<58;z+=8){box(-4.62,z,.13,.13,3.05,0,'#5e6868');box(-4.62,z,.45,.19
 for(let z=7;z<57;z+=5){box(-5.1,z,.6,1.65,.55,0,'#343b3b');box(-5.1,z+.4,.45,.5,.45,.45,'#738087');}
 
 }
-const sceneNS2={name:'09｜三重・NS2',id:'NS2',theme:'ns2',heading:0,desc:'興德路右轉 131 巷，再右轉進卸貨區，倒入指定碼頭',dimensions:ns2,
+const sceneNS2={name:'09｜三重・NS2',difficulty:6,id:'NS2',theme:'ns2',heading:0,desc:'興德路右轉 131 巷，再右轉進卸貨區，倒入指定碼頭',dimensions:ns2,
  start:()=>({...ns2Start}),goal:()=>ns2Goal(ns2Target),obstacles:ns2Obstacles,collision:s=>ns2StaticHit(s,ns2Obstacles()),parked:s=>ns2Parked(s,ns2Target),bounds:ns2Bounds,
- randomize:ns2Randomize,info:()=>ns2Layout,verify:ns2Verify,witness:()=>ns2Witness(ns2Target),render:renderNS2,
+ randomize:ns2Randomize,info:()=>ns2Layout,verify:ns2Verify,witness:()=>ns2Witness(ns2Target),coach:()=>ns2Coach(ns2Target),render:renderNS2,
  signs:()=>ns2.bayX.map((x,i)=>({x,y:4.54,z:ns2.wallZ+.23,text:String(i+1).padStart(2,'0'),size:.36})),
  guide:s=>s.z<4?'沿興德路西行，於 131 巷右轉':s.z<58?'沿興德路 131 巷直行約 73 公尺':s.x<4.5?'右轉進入藍天大樓卸貨區':'前進調整位置，再倒入指定碼頭'};
 // NS5: route from Chengde Rd Sec. 7 toward Tamsui, right onto Gongguan Rd, then left into No. 391.
@@ -89,10 +107,10 @@ function renderNS5({flat,box,localBox}){
  // Real scene side-loading bay sign above wall, positioned outside driveable corridor.
  box(x-L/2,low+.09,4.2,.1,.65,4.35,'#287568');
 }
-const sceneNS5={name:'10｜北投・NS5',id:'NS5',theme:'ns5',heading:-Math.PI/2,desc:'承德路七段右轉公館路，再左轉進卸貨區，左側平行停靠',dimensions:ns5,
- start:()=>({...ns5Start}),goal:()=>({...ns5Goal}),obstacles:()=>ns5Base,collision:ns5Hit,parked:ns5Parked,bounds:ns5Bounds,render:renderNS5,guide:ns5Guide,witness:ns5Witness,
+const sceneNS5={name:'10｜北投・NS5',difficulty:6,id:'NS5',theme:'ns5',heading:-Math.PI/2,desc:'承德路七段右轉公館路，再左轉進卸貨區，左側平行停靠',dimensions:ns5,
+ start:()=>({...ns5Start}),goal:()=>({...ns5Goal}),obstacles:()=>ns5Base,collision:ns5Hit,parked:ns5Parked,bounds:ns5Bounds,render:renderNS5,guide:ns5Guide,witness:ns5Witness,coach:()=>ns5Controls.map(c=>c.slice()),
  info:()=>({target:'NS5-01',occupied:[],dimensions:ns5}),signs:()=>[{x:ns5Goal.x-8.5,y:4.68,z:low+.16,text:'NS5-01',size:.48}]};
 return [sceneNS2,sceneNS5];
 }
-root.TruckRealScenes={version:'2.8',create:createRealScenes};
+root.TruckRealScenes={version:'3.1',create:createRealScenes};
 })(globalThis);

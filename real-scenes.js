@@ -45,7 +45,7 @@ for(let z=7;z<58;z+=8){box(-4.62,z,.13,.13,3.05,0,'#5e6868');box(-4.62,z,.45,.19
 for(let z=7;z<57;z+=5){box(-5.1,z,.6,1.65,.55,0,'#343b3b');box(-5.1,z+.4,.45,.5,.45,.45,'#738087');}
 
 }
-const sceneNS2={name:'09｜三重・興德路藍天大樓 NS2',id:'NS2',theme:'ns2',heading:0,desc:'興德路右轉 131 巷，再右轉進卸貨區，倒入指定碼頭',dimensions:ns2,
+const sceneNS2={name:'09｜三重・NS2',id:'NS2',theme:'ns2',heading:0,desc:'興德路右轉 131 巷，再右轉進卸貨區，倒入指定碼頭',dimensions:ns2,
  start:()=>({...ns2Start}),goal:()=>ns2Goal(ns2Target),obstacles:ns2Obstacles,collision:s=>ns2StaticHit(s,ns2Obstacles()),parked:s=>ns2Parked(s,ns2Target),bounds:ns2Bounds,
  randomize:ns2Randomize,info:()=>ns2Layout,verify:ns2Verify,witness:()=>ns2Witness(ns2Target),render:renderNS2,
  signs:()=>ns2.bayX.map((x,i)=>({x,y:4.54,z:ns2.wallZ+.23,text:String(i+1).padStart(2,'0'),size:.36})),
@@ -89,7 +89,7 @@ function renderNS5({flat,box,localBox}){
  // Real scene side-loading bay sign above wall, positioned outside driveable corridor.
  box(x-L/2,low+.09,4.2,.1,.65,4.35,'#287568');
 }
-const sceneNS5={name:'10｜北投 NS5',id:'NS5',theme:'ns5',heading:-Math.PI/2,desc:'承德路七段右轉公館路，再左轉進卸貨區，左側平行停靠',dimensions:ns5,
+const sceneNS5={name:'10｜北投・NS5',id:'NS5',theme:'ns5',heading:-Math.PI/2,desc:'承德路七段右轉公館路，再左轉進卸貨區，左側平行停靠',dimensions:ns5,
  start:()=>({...ns5Start}),goal:()=>({...ns5Goal}),obstacles:()=>ns5Base,collision:ns5Hit,parked:ns5Parked,bounds:ns5Bounds,render:renderNS5,guide:ns5Guide,witness:ns5Witness,
  info:()=>({target:'NS5-01',occupied:[],dimensions:ns5}),signs:()=>[{x:ns5Goal.x-8.5,y:4.68,z:low+.16,text:'NS5-01',size:.48}]};
 return [sceneNS2,sceneNS5];

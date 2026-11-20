@@ -6,7 +6,7 @@ const colors={brick:'#a47660',restaurant:'#a47660',glass:'#6b9299',office:'#8c96
 function create({box,flat,face,textureFace}){
  const v=(x,y,z,u,t)=>({x,y,z,u,t});
  // UV-mapped vertical planes are split in world metres for stable depth ordering and perspective.
- function panel(x1,z1,x2,z2,y,h,key){const im=imgs[key],color=colors[key]||'#9b9c96';let n=Math.max(1,Math.ceil(Math.hypot(x2-x1,z2-z1)/2.4)),m=Math.max(1,Math.ceil(h/3));for(let i=0;i<n;i++)for(let j=0;j<m;j++){let a=i/n,b=(i+1)/n,t=j/m,q=(j+1)/m;let V=(u,w)=>v(x1+(x2-x1)*u,y+h*(1-w),z1+(z2-z1)*u,u,w);textureFace([V(a,t),V(b,t),V(b,q),V(a,q)],im,color);}}
+ function panel(x1,z1,x2,z2,y,h,key){const im=imgs[key],color=colors[key]||'#9b9c96';let n=Math.max(1,Math.ceil(Math.hypot(x2-x1,z2-z1)/2.4)),m=Math.max(1,Math.ceil(h/3));for(let i=0;i<n;i++)for(let j=0;j<m;j++){let a=i/n,b=(i+1)/n,t=j/m,q=(j+1)/m;let V=(u,w)=>v(x1+(x2-x1)*u,y+h*(1-w),z1+(z2-z1)*u,u,w);textureFace([V(a,t),V(b,t),V(b,q),V(a,q)],im,color,key);}}
  function wall(x1,z1,x2,z2,y,h,key,repeat=1){for(let i=0;i<repeat;i++){let a=i/repeat,b=(i+1)/repeat;panel(x1+(x2-x1)*a,z1+(z2-z1)*a,x1+(x2-x1)*b,z1+(z2-z1)*b,y,h,key)}}
  // Edges: south (-z), east (+x), north (+z), west (-x). Facades are real world-space faces, not billboards.
  function building(x1,x2,z1,z2,h,keys,y=0){const k=typeof keys==='string'?{south:keys,east:keys,north:keys,west:keys}:keys;

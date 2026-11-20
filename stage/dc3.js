@@ -1,4 +1,4 @@
-/* Truck Simulator v3.9 | DC3 — independent real-world stage. Metres/radians. */
+/* Truck Simulator v4.0 | DC3 — independent real-world stage. Metres/radians. */
 (function(root){'use strict';
 root.TruckRealScenes.register('dc3',function({angle,at,hitch,rear,tractor,trailer,corners,overlap,advance}){
 const rect=(x1,x2,z1,z2,h,kind)=>({x:(x1+x2)/2,z:(z1+z2)/2,w:x2-x1,l:z2-z1,a:0,h,kind});
@@ -43,8 +43,8 @@ function dc3Guide(s){if(s.z<-251.3)return '沿復興三路行駛 · 路口左轉
 function renderDC3({flat,box,localBox,containerBody,street}){
  const D=dc3,M=-D.streetLength,HW=D.streetWidth/2,HM=D.mainWidth/2,Y=D.apronHalfWidth,P=D.parkingDepth;
  // Road surfaces and the driveway/apron; same metric geometry as collision rectangles.
- flat(-5,-105,220,440,'#a9aaa0',0,0);flat(-5,M,D.mainWidth,210,'#5f666b',Math.PI/2,.011);flat(0,(M+110)/2,D.streetWidth,110-M,'#676c6c',0,.014);flat(0,M,D.streetWidth,D.mainWidth,'#62696c',0,.018);
- flat((HW+P)/2,0,D.gateWidth,P-HW,'#7e807d',Math.PI/2,.016);flat((P+D.entryToWall)/2,0,D.entryToWall-P,Y*2,'#858985',0,.016);
+ flat(-5,-105,220,440,'#a9aaa0',0,0);flat(-5,M,D.mainWidth,210,'#465158',Math.PI/2,.011);flat(0,(M+110)/2,D.streetWidth,110-M,'#465158',0,.014);flat(0,M,D.streetWidth,D.mainWidth,'#465158',0,.018);
+ flat((HW+P)/2,0,D.gateWidth,P-HW,'#505c60',Math.PI/2,.016);flat((P+D.entryToWall)/2,0,D.entryToWall-P,Y*2,'#505c60',0,.016);
  for(let x=-105;x<100;x+=5)if(Math.abs(x)>7){for(let z of [M-4.1,M+4.1])flat(x,z,.11,3,'#ece9dc',Math.PI/2,.026);}
  for(let z=M+HM+2;z<110;z+=5){if(Math.abs(z)>7)flat(0,z,.11,2.9,'#e1bd65',0,.024);flat(-HW+.09,z,.1,4.9,'#ab5047',0,.025);if(Math.abs(z)>D.gateWidth/2+1)flat(HW-.09,z,.1,4.9,'#ab5047',0,.025);}
  for(let x=-4;x<4.5;x+=.8)flat(x,M+HM-1.4,.43,2.3,'#ece9dc',0,.035);

@@ -1,4 +1,4 @@
-/* Truck Simulator v3.9 | NS5 — independent real-world stage. Metres/radians. */
+/* Truck Simulator v4.0 | NS5 — independent real-world stage. Metres/radians. */
 (function(root){'use strict';
 root.TruckRealScenes.register('ns5',function({angle,at,hitch,rear,tractor,trailer,corners,overlap,advance}){
 // NS5: route from Chengde Rd Sec. 7 toward Tamsui, right onto Gongguan Rd, then left into No. 391.
@@ -20,12 +20,12 @@ function ns5Witness(){let s={...ns5Start},path=[s];for(const [ticks,steer,gear,t
 function ns5Guide(s){if(s.z<10.5)return '承德路七段往淡水方向行駛 · 公館路右轉';if(s.z<66)return '沿公館路直行 · 前方左轉 391 號卸貨區';if(s.x>-16)return '左轉入場 · 淨寬 5.57 m，留意拖板內輪差';return '左側月台平行停靠 · 前進超過標線後微速倒車修正';}
 function renderNS5({flat,box,localBox,street}){
  flat(-7.5,50,215,165,'#b9b8ae',0,0);
- flat(-7.5,4.25,12.5,215,'#555e63',Math.PI/2,.013);
- flat(0,(10.5+116)/2,12.43,116-10.5,'#616a6e',0,.014);
- flat((-97.55-half)/2,76.63,5.57,97.55-half,'#737b7b',Math.PI/2,.015);
- flat(-7.5,-8,8.4,215,'#59646a',Math.PI/2,.017);
+ flat(-7.5,4.25,12.5,215,'#465158',Math.PI/2,.013);
+ flat(0,(10.5+116)/2,12.43,116-10.5,'#465158',0,.014);
+ flat((-97.55-half)/2,76.63,5.57,97.55-half,'#505c60',Math.PI/2,.015);
+ flat(-7.5,-8,8.4,215,'#465158',Math.PI/2,.017);
  // A four-way intersection: the south leg connects through the divider opening.
- flat(0,-21.1,12.43,17.8,'#60676b',0,.018);flat(0,3.1,19,30.6,'#5d666a',0,.019);
+ flat(0,-21.1,12.43,17.8,'#465158',0,.018);flat(0,3.1,19,30.6,'#465158',0,.019);
  for(const [a,b] of [[-115,-9.5],[9.5,100]])flat((a+b)/2,-3,2,b-a,'#728851',Math.PI/2,.021);
  for(let x=-110;x<100;x+=5){if(Math.abs(x)>11){flat(x,-8,.11,2.8,'#e9e6d9',Math.PI/2,.026);if(street)street.tree(x,-3,.78);else{box(x,-3,.22,.22,2.8,0,'#766e5e');box(x,-3,1.8,2.0,1.9,2.2,'#587c4a')}}}
  // Markings and stop lines on all four approaches, leaving the central square clear.

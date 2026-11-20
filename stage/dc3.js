@@ -1,4 +1,4 @@
-/* Truck Simulator v3.8 | DC3 — independent real-world stage. Metres/radians. */
+/* Truck Simulator v3.9 | DC3 — independent real-world stage. Metres/radians. */
 (function(root){'use strict';
 root.TruckRealScenes.register('dc3',function({angle,at,hitch,rear,tractor,trailer,corners,overlap,advance}){
 const rect=(x1,x2,z1,z2,h,kind)=>({x:(x1+x2)/2,z:(z1+z2)/2,w:x2-x1,l:z2-z1,a:0,h,kind});
@@ -40,7 +40,7 @@ function dc3Verify(){return dc3.bayZ.map((_,i)=>{let commands=dc3Coach(i),s={...
 function dc3Randomize(rng=Math.random){let choices=(dc3Verified??=dc3Verify()).filter(v=>v.valid);if(choices.length!==8)throw Error('DC3 path validation failed: '+choices.length+'/8');let q=choices[Math.min(choices.length-1,Math.floor(rng()*choices.length))];dc3Target=q.i;let bays=[...new Set(q.eligible.map(o=>o.bay))];for(let i=bays.length-1;i>0;i--){let j=Math.floor(rng()*(i+1));[bays[i],bays[j]]=[bays[j],bays[i]];}let count=Math.min(bays.length,Math.floor(rng()*5));dc3Occupied=bays.slice(0,count).map(bay=>{let types=q.eligible.filter(o=>o.bay===bay);return {...types[Math.min(types.length-1,Math.floor(rng()*types.length))]};});dc3Layout={target:q.i+1,eligible:q.eligible.map(o=>({...o})),occupied:dc3Occupied.map(o=>({...o})),dimensions:{...dc3,bayZ:dc3.bayZ.slice()}};return dc3Layout;}
 const dc3Obstacles=()=>dc3Base.concat(dc3Occupied.map(o=>dc3Vehicle(o.bay-1,o.type)));
 function dc3Guide(s){if(s.z<-251.3)return '沿復興三路行駛 · 路口左轉科技一路';if(s.x<4.6&&s.z<-10)return '科技一路直行約 262 公尺 · 前方右轉 DC3';if(s.x<17)return '注意入口兩側植栽 · 右轉進入 DC3';return '先前進調整角度，再倒入指定碼頭';}
-function renderDC3({flat,box,localBox,containerBody}){
+function renderDC3({flat,box,localBox,containerBody,street}){
  const D=dc3,M=-D.streetLength,HW=D.streetWidth/2,HM=D.mainWidth/2,Y=D.apronHalfWidth,P=D.parkingDepth;
  // Road surfaces and the driveway/apron; same metric geometry as collision rectangles.
  flat(-5,-105,220,440,'#a9aaa0',0,0);flat(-5,M,D.mainWidth,210,'#5f666b',Math.PI/2,.011);flat(0,(M+110)/2,D.streetWidth,110-M,'#676c6c',0,.014);flat(0,M,D.streetWidth,D.mainWidth,'#62696c',0,.018);
@@ -51,22 +51,30 @@ function renderDC3({flat,box,localBox,containerBody}){
  for(let z=M-HM+.65;z<M+HM;z+=.9){flat(-8,z,.44,2.7,'#e3e0d6',Math.PI/2,.035);flat(8,z,.44,2.7,'#e3e0d6',Math.PI/2,.035);}
  // Physical edges, divider, warehouse. Buildings set back from the red curb.
  for(const o of dc3Base){if(o.kind==='warehouse'){// A raised upper volume and recessed dark loading bays instead of painted doors on a solid wall.
-   box(o.x,o.z,o.w,o.l,o.h-4.60,4.60,'#acb4b5',0,true);box(o.x+.55,o.z,o.w-1.1,o.l,4.60,0,'#495256',0,true);
+   if(street)street.building(o.x-o.w/2,o.x+o.w/2,o.z-o.l/2,o.z+o.l/2,o.h-4.60,{south:['warehouse',4],north:['warehouse',4],east:['warehouse',5],west:['warehouse',5]},4.60);else box(o.x,o.z,o.w,o.l,o.h-4.60,4.60,'#acb4b5',0,true);box(o.x+.55,o.z,o.w-1.1,o.l,4.60,0,'#495256',0,true);
    for(let k=0;k<7;k++){let zz=(D.bayZ[k]+D.bayZ[k+1])/2;box(D.entryToWall+.26,zz,.52,.92,4.60,0,'#9ca4a6',0,true);}
    for(let side of [-1,1]){let zz=side*(Y+17.25)/2;box(D.entryToWall+.26,zz,.52,Y-17.25,4.6,0,'#a6aeb0',0,true);}
    continue;}let c=o.kind==='median'?'#c4b988':'#bebfb6';box(o.x,o.z,o.w,o.l,o.h,0,c,0,true);}
- for(let x=-100;x<95;x+=14){if(Math.abs(x)<15)continue;for(let side of [-1,1]){let z=M+side*(HM+8),h=8+((Math.abs(x)|0)%4)*3;box(x,z,12,12,h,.16,side<0?'#a48d80':'#a9aba0',0,true);for(let r=-4;r<=4;r+=4)for(let yy=2;yy<h-1;yy+=3)box(x+r,z-side*6.04,2.2,.07,1.3,yy,'#47606a');}}
- for(let z=M+25;z<-37.6;z+=25){for(let side of [-1,1]){let x=side*14,h=9+((Math.round(z/25)+12)%4)*3;box(x,z,14,21,h,.16,side<0?'#a3aaa8':'#a69c90',0,true);for(let f=-7;f<=7;f+=4.5)for(let y=3;y<h-1;y+=3)box(x-side*7.04,z+f,.07,2.7,1.25,y,'#4e6870');}}
+ for(let x=-100;x<95;x+=14){if(Math.abs(x)<15)continue;for(let side of [-1,1]){let z=M+side*(HM+8),h=8+((Math.abs(x)|0)%4)*3;if(street){if(side===1&&x===-16)continue;const mat=side<0?(x===-16?'hardware':x===-30?'betel':'shops'):'office';street.building(x-6,x+6,z-6,z+6,side<0?12:h,mat,.16);if(side<0){box(x,z+5.7,11.8,.60,.20,3.15,'#5f7477');for(let r=-4;r<=4;r+=2.2)street.scooter(x+r,z+6.45,0,'#53696e');}}else{box(x,z,12,12,h,.16,side<0?'#a48d80':'#a9aba0',0,true);for(let r=-4;r<=4;r+=4)for(let yy=2;yy<h-1;yy+=3)box(x+r,z-side*6.04,2.2,.07,1.3,yy,'#47606a');}}}
+ for(let z=M+25;z<-37.6;z+=25){for(let side of [-1,1]){let x=side*14,h=9+((Math.round(z/25)+12)%4)*3;if(street){if(z<M+44){if(side===-1)continue;street.building(9,27,z-8,z+9,11,'warehouse',.16);street.wall(HW+.55,z+10,HW+.55,M+HM+.3,.16,2.2,'fence',3);continue;}street.building(x-7,x+7,z-10.5,z+10.5,h,side<0?'office':'warehouse',.16);}else{box(x,z,14,21,h,.16,side<0?'#a3aaa8':'#a69c90',0,true);for(let f=-7;f<=7;f+=4.5)for(let y=3;y<h-1;y+=3)box(x-side*7.04,z+f,.07,2.7,1.25,y,'#4e6870');}}}
+ if(street){ // The single-storey FamilyMart is on the left after the turn, with parking on its private forecourt.
+   const z1=M+HM+2.7,z2=z1+10;street.building(-19,-6.8,z1,z2,4.1,{south:'family',east:'familySide',north:'familySide',west:'familySide'},.16);
+   // Green-white-blue fascia canopy and forecourt; no prop enters the 9.20 m road.
+   box(-12.9,z1+5,12.5,10.7,.16,4.26,'#e2e6dc',0,true);box(-12.9,z1-.31,12.5,.13,.12,4.28,'#1f8858');
+   for(let x=-18.1;x<-8.1;x+=1.35)street.scooter(x,z1-1.5,0,['#37464c','#687e84','#855951'][Math.floor(Math.abs(x))%3]);
+   street.signal(-7.4,M-HM-.5,0,5.1);street.signal(7.4,M+HM+.3,Math.PI,5.1);street.roadArrow(-17,M-5.1,Math.PI/2);street.roadArrow(2.3,M+21,0);
+   for(let x=-102;x<99;x+=2)if(Math.abs(x)>9)flat(x,M-.35,.48,1.03,Math.floor(x/2)%2?'#303a3b':'#e1be67',Math.PI/2,.28);
+ }
  // Short guardrails, curbside lighting, planted parking islands (kept outside the swept path).
  for(let side of [-1,1]){let x=side*(HW+.35);for(let z=M+22;z<105;z+=21){if(side===1&&Math.abs(z)<10)continue;box(x,z,.14,.14,4.2,.16,'#77817d');box(x-side*.35,z,.75,.22,.14,4.2,'#b1b7b0');}}
- for(let side of [-1,1]){let z0=side*16.5;box((HW+P)/2,z0,P-HW,21,.13,.16,'#6f874c');for(let z=7;z<27;z+=4){let zz=side*z;box(HW+1.5,zz,.22,.22,2.8,.25,'#69533b');box(HW+1.5,zz,2.3,2.7,2.1,2.65,'#557846');box(P-.35,zz,.65,3.8,.7,.26,'#637d42');}
+ for(let side of [-1,1]){let z0=side*16.5;box((HW+P)/2,z0,P-HW,21,.13,.16,'#6f874c');for(let z=7;z<27;z+=4){let zz=side*z;if(street)street.tree(HW+1.5,zz,.9);else{box(HW+1.5,zz,.22,.22,2.8,.25,'#69533b');box(HW+1.5,zz,2.3,2.7,2.1,2.65,'#557846');}box(P-.35,zz,.65,3.8,.7,.26,'#637d42');}
   // The street-view passenger-car parking strip sits outside the actual driveway/apron.
   for(let z=9;z<25;z+=3.05){let zz=side*z,x=12.2,c=['#536874','#aab0b1','#62646c','#ad6a5c'][Math.floor(z)%4];box(x,zz,1.82,4.3,.7,.48,c,Math.PI/2,true);box(x,zz,1.6,2.15,.62,1.15,'#52646c',Math.PI/2,true);for(let f of [-1.3,1.25])for(let r of [-.8,.8])localBox(x,zz,Math.PI/2,f,r,.26,.65,.6,.16,'#252c30');}}
  // Trees, low industrial fences and red shop awnings outside the drivable bound.
- for(let z=M+32;z<-34;z+=23){for(let side of [-1,1]){let x=side*(HW+1.2);if(side===1&&z<-140)continue;box(x,z,.23,.23,3.1,.16,'#75634c');box(x,z,2.5,2.9,2.2,2.65,'#587849');}}
+ for(let z=M+32;z<-34;z+=23){for(let side of [-1,1]){let x=side*(HW+1.2);if(side===1&&z<-140)continue;if(street)street.tree(x,z,.9);else{box(x,z,.23,.23,3.1,.16,'#75634c');box(x,z,2.5,2.9,2.2,2.65,'#587849');}}}
  for(let x=-95;x<-14;x+=13){box(x,M-HM-1.05,6,.12,.65,2.45,'#866c4d');box(x,M-HM-1.1,6,1.6,.16,2.23,'#7e5650');}
  // Facade detail facing Keji Rd, 8 doors numbered left to right when entering.
- const wx=D.entryToWall;for(let z=-25;z<=25;z+=3.8)for(let y=6.1;y<22;y+=3.05)box(wx-.04,z,.06,2.9,1.18,y,'#607883',0,true);
+ const wx=D.entryToWall;if(!street)for(let z=-25;z<=25;z+=3.8)for(let y=6.1;y<22;y+=3.05)box(wx-.04,z,.06,2.9,1.18,y,'#607883',0,true);
  for(let i=0;i<8;i++){let z=D.bayZ[i],target=i===dc3Target,c=target?'#63e8af':'#d6c58d';box(wx+.11,z,.07,3.48,3.9,.48,'#303d44');for(let r of [-1.71,1.71])box(wx+.04,z+r,.13,.19,4.08,.2,'#5e6c70');box(wx+.015,z,.16,3.75,.22,.24,'#b8a179');box(wx+.07,z,.15,3.7,.21,4.31,'#8b9698');box(wx-.14,z,.16,2.4,.55,4.48,target?'#218064':'#3a5965');for(let side of [-1,1])flat(D.stopX-8.6,z+side*1.8,.10,17.2,c,Math.PI/2,.045);flat(D.stopX,z,.12,3.6,c,0,.046);if(target)for(let x=D.stopX-17;x<D.stopX;x+=.8)flat(x,z,.055,.39,'#9ddcc0',Math.PI/2,.048);}
  // Stored trucks and container semitrailers match the exact collision footprint and orientation.
  for(const o of dc3Obstacles().filter(q=>q.kind==='dc3parked')){let {x,z,a,l,bay,type}=o,paint=['#e6ded8','#426d87','#b1bdc0','#b56f64'][bay%4],bodyLength=type==='container'?12.2:5.1;box(x,z,2.43,l-.12,.30,.63,'#323b40',a);if(type==='container'){let p=at(x,z,a,-(l-bodyLength)/2);containerBody(p.x,p.z,a,bodyLength,paint,1.05);}else localBox(x,z,a,-(l-bodyLength)/2,0,2.43,bodyLength,2.38,1.05,paint,true);

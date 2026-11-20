@@ -1,4 +1,4 @@
-/* Truck Simulator v3.8 | real-world stage registry
+/* Truck Simulator v3.9 | real-world stage registry
  * Add a stage filename here, then create that JS in this directory.
  * Each stage registers its own factory with TruckRealScenes.register(slug, factory).
  * Order here defines menu order. IDs must be unique.
@@ -6,7 +6,7 @@
 (function(root){'use strict';
 const files=Object.freeze(['ns2.js','ns5.js','dc3.js']);
 const factories=new Map(),errors=[];
-root.TruckRealScenes={version:'3.8',files,errors,
+root.TruckRealScenes={version:'3.9',files,errors,
  register(slug,factory){if(typeof factory!=='function'||factories.has(slug))throw Error('Duplicate or invalid stage: '+slug);factories.set(slug,factory);},
  create(physics){
   errors.length=0;const scenes=[],ids=new Set();

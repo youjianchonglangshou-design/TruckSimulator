@@ -1,4 +1,4 @@
-/* Truck Simulator v3.8 | NS2 — independent real-world stage. Metres/radians. */
+/* Truck Simulator v3.9 | NS2 — independent real-world stage. Metres/radians. */
 (function(root){'use strict';
 root.TruckRealScenes.register('ns2',function({angle,at,hitch,rear,tractor,trailer,corners,overlap,advance}){
 const ns2={mainWidth:8,mainLength:65.41,alleyLength:72.79,yardLength:48.04,yardDepth:24.58,alleyWidth:9,wallZ:60.5,northZ:85.08,bayX:[9.6,14,18.4,22.8,27.2,31.6,36],pitch:4.4,stopZ:61.3};
@@ -33,22 +33,31 @@ function ns2Coach(i){
 
 function ns2Obstacles(){return ns2Base.concat(ns2Occupied.map(ns2Truck));}
 
-function renderNS2({flat,box,localBox,containerBody}){const D=ns2;
+function renderNS2({flat,box,localBox,containerBody,street}){const D=ns2;
 // Asphalt and pavement boundaries, in metres, registered to collision geometry.
 flat(26,40,112,142,'#b8b7ad',0,0);flat((76-24)/2,-4,8,100,'#535e65',Math.PI/2,.012);flat(0,52.5,9,105,'#62696a',0,.014);flat(26.27,72.79,43.54,24.58,'#777c79',0,.016);flat(4.5,2,8,8,'#777c79',0,.015);
 flat(26,-9.1,2.2,100,'#a1a59a',Math.PI/2,.018);flat(26,-9.1,1.62,100,'#647e49',Math.PI/2,.020);flat(26,-15,8,100,'#535e65',Math.PI/2,.015);
-for(let x=-22;x<76;x+=5){flat(x,-4,.12,2.8,'#e9e6d9',Math.PI/2,.024);flat(x,-8,.12,4.9,'#debd63',Math.PI/2,.026);flat(x,-.12,.10,4.8,'#e0c160',Math.PI/2,.026);if(Math.abs(x)>8)box(x,-9.1,.24,.24,3.0,0,'#71665a');if(Math.abs(x)>8)box(x,-9.1,2.0,2.0,1.7,2.1,'#54734a');}
+for(let x=-22;x<76;x+=5){flat(x,-4,.12,2.8,'#e9e6d9',Math.PI/2,.024);flat(x,-8,.12,4.9,'#debd63',Math.PI/2,.026);flat(x,-.12,.10,4.8,'#e0c160',Math.PI/2,.026);if(Math.abs(x)>8){if(street)street.tree(x,-9.1,.82);else{box(x,-9.1,.24,.24,3.0,0,'#71665a');box(x,-9.1,2.0,2.0,1.7,2.1,'#54734a');}}}
 for(let z=6;z<105;z+=4){flat(0,z,.12,2.1,'#e0c675',0,.03);flat(-4.4,z,.10,3.9,'#e1ba58',0,.03);if(z<59||z>86)flat(4.4,z,.10,3.9,'#e1ba58',0,.03);}
 // Crosswalk at the T junction; yellow keep-clear box across the gate.
 for(let x=-3.8;x<4.5;x+=.88)flat(x,3.1,.44,2.5,'#e6e4dd',0,.04);
 for(let z=60.8;z<85;z+=2.8){flat(3.3,z,.10,6.2,'#d8b65c',Math.PI/4,.04);flat(3.3,z,.10,6.2,'#d8b65c',-Math.PI/4,.04);}
 for(let o of ns2Obstacles()){let {x,z,w,l,h,kind}=o;if(kind==='parkedtruck'){let col=['#889da6','#aa4f36','#777e61','#b4b5ae'][o.bay%4];containerBody(x,z-2.15,0,12.2,col,1.13);box(x,z+5.6,2.50,5.8,2.65,.9,'#b5bcc0',0,true);box(x,z+8.52,2.12,.07,.86,2.48,'#304c5b');box(x,z,2.45,16.7,.25,.64,'#303a3e');for(let f of [-6,-5,2.4,6.7])for(let side of [-1,1])localBox(x,z,0,f,side*1.08,.36,.88,.78,0,'#262d30');continue;}
-let color={shops:'#a48674',glass:'#7e9ea5',shed:'#b4b2a2',guard:'#9ba7a9',office:'#8b969d',sidewalk:'#bab8ac',corner:'#999e99'}[kind];box(x,z,w,l,h,0,color,0,true);
+if(street&&kind==='corner'){box(x,z,w,l,.16,0,'#b2b4a8',0,true);continue;}if(street&&kind==='shops'){// Red-brick restaurant at Xingde Road / Lane 131, remaining blocks reuse the brick atlas.
+  street.building(x-w/2,x+w/2,z-l/2,z-l/2+14,h,{south:'restaurant',east:'restaurant',north:'brick',west:'brick'});
+  for(let a=z-l/2+14;a<z+l/2;a+=12)street.building(x-w/2,x+w/2,a,Math.min(a+12,z+l/2),h,'brick');
+  // Narrow sign canopy and scooters remain inside the shop/corner obstacle or sidewalk setback.
+  box(-14.6,5.03,19.8,.10,.26,3.02,'#234c87');for(let zz=8;zz<18;zz+=2.3)street.scooter(-4.95,zz,0,'#476773');
+  continue;}
+ if(street&&kind==='glass'){street.building(x-w/2,x+w/2,z-l/2,z+l/2,h,{south:['glass',4],east:['glass',5],north:['glass',4],west:['glass',5]});continue;}
+ if(street&&kind==='office'){street.building(x-w/2,x+w/2,z-l/2,z+l/2,h,{south:['office',2],east:['office',4],north:['office',2],west:['office',4]});continue;}
+ let color={shops:'#a48674',glass:'#7e9ea5',shed:'#b4b2a2',guard:'#9ba7a9',office:'#8b969d',sidewalk:'#bab8ac',corner:'#999e99'}[kind];box(x,z,w,l,h,0,color,0,true);
 if(kind==='shops'){for(let f=-l/2+2;f<l/2;f+=4){localBox(x,z,0,f,w/2+.022,.045,3.2,2.55,.20,'#575b58');for(let y=3.1;y<h-1;y+=2.5)localBox(x,z,0,f,w/2+.03,.055,2.1,1.14,y,'#405761');}}
 if(kind==='glass'||kind==='office'){for(let f=-l/2+1.5;f<l/2;f+=3.0)for(let y=1.1;y<h-.9;y+=2.6)localBox(x,z,0,f,-w/2-.024,.05,2.75,1.78,y,'#478b92');for(let r=-w/2+1.5;r<w/2;r+=3)for(let y=2;y<h-1;y+=2.6)localBox(x,z,0,-l/2-.026,r,2.6,.06,1.72,y,'#48898e');}
 if(kind==='shed'){for(let f=-l/2+.7;f<l/2;f+=.9)localBox(x,z,0,f,-w/2-.025,.045,.10,h-.3,.12,'#8e9690');for(let r=-w/2+2;r<w/2;r+=4)localBox(x,z,0,-l/2-.03,r,2.0,.05,1.5,1.7,'#46565b');}
 if(kind==='guard'){box(x,z,w+.18,l+.18,.22,h,'#5c7061');for(let f=-l/2+2;f<l/2;f+=4)localBox(x,z,0,f,-w/2-.025,.04,2.7,1.0,1.8,'#3d535b');}}
-// Seven loading doors on north-facing wall of the building, seven distinct bay outlines.
+if(street){for(let xx=-23;xx<-10;xx+=1.7)street.scooter(xx,1.5,Math.PI/2,['#3c535b','#7c6357','#9aa2a1'][Math.floor(Math.abs(xx))%3]);street.lamp(-4.8,8);street.lamp(6,5);for(let zz=14;zz<55;zz+=13)street.lamp(-5.1,zz);for(let xx=-4;xx<4;xx+=.9)flat(xx,4.38,.09,.7,'#b4b3a6',0,.019);}
+ // Seven loading doors on north-facing wall of the building, seven distinct bay outlines.
 for(let i=0;i<7;i++){let x=D.bayX[i],target=ns2Layout.target===i+1,used=ns2Layout.occupied.includes(i+1),color=target?'#67e8ad':'#d2bf81';box(x,D.wallZ+.045,3.12,.08,3.9,.16,'#3e474b');for(let y=.32;y<3.9;y+=.29)box(x,D.wallZ+.10,2.95,.035,.035,y,'#87918e');box(x,D.wallZ+.12,3.3,.14,.16,.10,'#262e31');box(x,D.wallZ+.14,2.45,.14,.57,4.25,target?'#237e62':'#355768');for(let side of [-1,1])flat(x+side*1.8,D.stopZ+7,.10,14,color,0,.045);flat(x,D.stopZ,3.6,.13,color,0,.047);if(target)for(let z=D.stopZ+.5;z<D.stopZ+14;z+=.75)flat(x,z,.05,.38,'#a1d7b9',0,.048);}
 // Painted gate threshold and street details outside the driving corridor.
 for(let z=7;z<58;z+=8){box(-4.62,z,.13,.13,3.05,0,'#5e6868');box(-4.62,z,.45,.19,.14,2.85,'#c0c5bd');}

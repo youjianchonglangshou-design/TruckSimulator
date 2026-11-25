@@ -1,0 +1,55 @@
+/* RC30: 3D mirror overlay hints only; the four cameras and update caches are untouched. */
+body.cabin3d-ready .cab-mirror-hit,
+body.cabin3d-ready .cab-mirror-hit:hover,
+body.cabin3d-ready .cab-mirror-hit:focus-visible,
+body.cabin3d-ready .cab-mirror-hit.dragging {
+ outline:none!important;outline-offset:0!important;
+ box-shadow:none!important;background:transparent!important;
+ border:0!important;overflow:visible!important;filter:none!important;
+}
+.cab-mirror-indicator .cab-mirror-grip,
+.cab-mirror-indicator .cab-mirror-tip{position:absolute;box-sizing:border-box;white-space:nowrap;user-select:none;}
+.cab-mirror-indicator .cab-mirror-grip{
+ top:2px;width:23px;height:23px;display:grid;place-items:center;
+ border:1px solid #7cd8c4be;border-radius:6px;color:#c2fff0;
+ background:#14333ce9;box-shadow:0 0 3px #43d4b457;
+ animation:rc30MirrorBreath 3.6s ease-in-out infinite;
+ pointer-events:auto;touch-action:none;cursor:grab;
+}
+.cab-mirror-indicator .cab-mirror-grip svg{display:block;width:15px;height:15px;pointer-events:none;}
+.cab-mirror-indicator-left .cab-mirror-grip{left:-9px;transform:translateX(-100%);}
+.cab-mirror-indicator-right .cab-mirror-grip{right:-9px;transform:translateX(100%);}
+.cab-mirror-indicator .cab-mirror-tip{
+ top:2px;height:23px;line-height:21px;padding:0 7px;
+ border:1px solid #62baaf91;border-radius:5px;background:#18313dec;color:#e5fff9;
+ font-size:11px;pointer-events:none;visibility:hidden;opacity:0;transition:opacity .16s ease;
+}
+.cab-mirror-indicator-left .cab-mirror-tip{left:-40px;transform:translateX(-100%);}
+.cab-mirror-indicator-right .cab-mirror-tip{right:-40px;transform:translateX(100%);}
+@keyframes rc30MirrorBreath{
+ 0%,100%{opacity:.58;box-shadow:0 0 2px #76eed44a;}
+ 50%{opacity:1;box-shadow:0 0 10px #76eed49a;}
+}
+@media(hover:hover) and (pointer:fine){
+ .cab-mirror-indicator .cab-mirror-grip:hover{animation:none;opacity:1;box-shadow:0 0 9px #8cfbe4ac;}
+ .cab-mirror-indicator .cab-mirror-grip:hover+.cab-mirror-tip{visibility:visible;opacity:1;}
+}
+.cab-mirror-indicator.dragging .cab-mirror-grip{animation:none;opacity:1;box-shadow:0 0 9px #8cfbe4b9;cursor:grabbing;}
+@media(pointer:coarse),(max-width:600px),(max-height:400px){
+ .cab-mirror-indicator .cab-mirror-grip{width:21px;height:21px;top:1px;border-radius:5px;}
+ .cab-mirror-indicator .cab-mirror-grip svg{width:13px;height:13px;}
+ .cab-mirror-indicator .cab-mirror-tip{display:none;}
+}
+@media(prefers-reduced-motion:reduce){.cab-mirror-indicator .cab-mirror-grip{animation:none;opacity:1;}}
+/* RC32: user-adjustable grip size; all four handles share the selected CSS-pixel size. */
+.cab-mirror-indicator .cab-mirror-grip{width:var(--cab-mirror-grip-size,12px);height:var(--cab-mirror-grip-size,12px);}
+.cab-mirror-indicator .cab-mirror-grip svg{width:65%;height:65%;}
+.cab-mirror-indicator-left .cab-mirror-tip{left:calc(-17px - var(--cab-mirror-grip-size,12px));}
+.cab-mirror-indicator-right .cab-mirror-tip{right:calc(-17px - var(--cab-mirror-grip-size,12px));}
+@media(pointer:coarse),(max-width:600px),(max-height:400px){
+ .cab-mirror-indicator .cab-mirror-grip{width:var(--cab-mirror-grip-size,12px);height:var(--cab-mirror-grip-size,12px);}
+}
+
+/* Keep the projected grip and mirror hit rectangle anchored while pressed.
+   The base button:active rule otherwise replaces translate(-50%, -50%). */
+body.cabin3d-ready .cab-mirror-hit:active{transform:translate(-50%,-50%);}

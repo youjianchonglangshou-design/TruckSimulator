@@ -1,0 +1,21 @@
+{
+  "schema": "TruckSimulatorParkingBrakeCalibration",
+  "version": "1.0",
+  "coordinateSpace": "gear-selector-model local",
+  "units": {
+    "position": "Three.js model units",
+    "rotation": "degrees XYZ",
+    "scale": "uniform multiplier"
+  },
+  "position": {
+    "x": 0.003,
+    "y": -0.21,
+    "z": 0.007
+  },
+  "rotation": {
+    "x": 0,
+    "y": 0,
+    "z": 0
+  },
+  "scale": 0.95
+}

@@ -1,0 +1,12 @@
+# MissionSystem / v6.0.0-alpha.REBUILD-DEV.2
+
+MissionSystem is the owner of selected route, orientation and rating. `mission-system.js` wraps the existing public Physics API without changing its integration/collision algorithms. Each stage supplies a `mission` descriptor; the adapter exposes a route-specific start, goal, parked, distance, guidance, and scene paint configuration. Settings mounts `mission-ui.js`; its CSS is scoped to the mission card. The GameHost bridge selects the mission before resetting, and existing guidance/Nico and radar consumers receive the resolved goal. Original standard inbound tasks are unchanged. Re-start retains the current mission; explicit legacy level selection clears it.
+
+NS2: 興德路; NS5: 承德路七段（公館路口） (the actual original start is on Chengde Rd, not midway along Gongguan Rd); DC3: 復興三路. Outbound goal is a 22 m × 4 m rectangle at the original roadside start footprint. Both tractor and trailer corners must be inside, speed <0.12 m/s, articulation <=0.12 rad and no collision. The two forbidden combinations are rejected by the core, not just the UI. NS5 outbound forward starts with the cab toward the exit; reverse starts with the cab toward the inner end. Existing NICO avoidance and animation unchanged. All tasks start in N for safety; reverse tasks use R to begin. New alternate routes do not have validated coach commands; their coach start is disabled, standard inbound retains original commands.
+
+## Verification
+- `node --test tests/mission-system.test.cjs` — matrix, locks, initial pose and first second of motion with all docks/representative empty and occupied layouts, outbound whole-vehicle stop predicate.
+- `python tests/mission-browser-qa.py` — actual game core in Chromium (2D fallback), all 10 mission selections, NICO and mission title, reset, plus production selection DOM in isolated cabin fixture in four sizes. The fixture is NOT a WebGL test.
+- Original coach UI/core remains functional in the original NS5 route. Full historical suite: 94 pass / 72 fail (baseline 91 pass / 72 fail; same exact failed test names).
+- Full manual driveability of each new route and all occupied layouts, actual WebGL cabin (Three.js CDN unavailable), actual mobile/production deployments not validated. This is a DEV candidate, not a formal release. Existing release gate intentionally continues blocking official ZIP.
+- Native 2D fallback dropdown retains original default missions; new selector is in the cabin's real-stage card. Test calls the same production mission action via the bridge.

@@ -1,1 +1,0 @@
-'use strict';const cp=require('node:child_process'),path=require('node:path');const result=cp.spawnSync(process.execPath,[path.join(__dirname,'verify-release.cjs')],{stdio:'inherit'});if(result.status!==0){console.error('No official ZIP generated.');process.exit(1)}throw Error('Official packaging must be implemented after approval of all gates.');

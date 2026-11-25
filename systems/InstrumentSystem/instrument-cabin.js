@@ -41,7 +41,7 @@ function drawInstrument(s){
  ctxRight.fillStyle=s.hits>=7?'#ffb79b':'#f0fbff';ctxRight.fillText(`${s.hits}/10`,640,489);
  right.restore();hitsTime.texture.needsUpdate=true;
  for(const [id,label,value] of [
-  ['angle','聯結角',`${Math.round(s.angle)}°`],
+  ['angle','聯結角',s.coupling?'—':`${Math.round(s.angle)}°`],
   ['distance',s.coupling?'銜接距離':s.mission?.route==='out'?'迄點距離':'後端距離',s.distance===null?'—':s.distance.toFixed(1)+' m']
  ]){
   const d=svc.displaySurfaces[id],x=d.canvas.getContext('2d');x.clearRect(0,0,d.canvas.width,d.canvas.height);
@@ -49,7 +49,7 @@ function drawInstrument(s){
   if(!d.mesh.visible)continue;
   x.fillStyle='#152a40';x.fillRect(0,0,d.canvas.width,d.canvas.height);
   x.fillStyle='#b6d4e0';x.textAlign='center';x.font='bold 72px "Microsoft JhengHei",sans-serif';x.fillText(label,d.canvas.width/2,82);
-  x.fillStyle=id==='angle'&&Math.abs(Math.round(s.angle))>=45?'#ff6f70':'#f4ffff';x.font='bold 130px system-ui';x.fillText(value,d.canvas.width/2,210);
+  x.fillStyle=id==='angle'&&!s.coupling&&Math.abs(Math.round(s.angle))>=45?'#ff6f70':'#f4ffff';x.font='bold 130px system-ui';x.fillText(value,d.canvas.width/2,210);
   d.texture.needsUpdate=true;
  }
 }

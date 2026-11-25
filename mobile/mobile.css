@@ -1,0 +1,117 @@
+@media(pointer:coarse){.touch{display:flex}.help{display:none}}
+@media(max-width:560px) and (pointer:coarse){.stats{display:none}.shifter{left:43%;bottom:60px}.touch{left:50%;right:auto;transform:translateX(-50%)}}
+@media (pointer:coarse){
+ .touch{display:flex;position:absolute;z-index:6;left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));transform:none;justify-content:space-between;align-items:flex-end;gap:0;pointer-events:none}
+ .touch .steering,.touch .pedals{display:flex;gap:clamp(5px,0.7vw,10px);pointer-events:auto;touch-action:none}
+ .touch button{min-width:0;width:clamp(48px,5.8vw,74px);height:clamp(48px,12vh,65px);padding:5px;touch-action:none;flex:none}
+ .touch .steering button{font-size:clamp(21px,2.5vw,29px)}
+ .touch .pedals button{font-size:clamp(12px,1.3vw,17px);height:clamp(53px,14vh,76px)}
+ .touch .steering button:active,.touch .pedals button:active{transform:none}
+}
+@media (pointer:coarse) and (max-height:520px) and (orientation:landscape){
+ .touch button{height:clamp(44px,13vh,65px)}
+ .touch .pedals button{height:clamp(48px,16vh,76px)}
+}
+@media(pointer:coarse){
+ .stats.panel{display:block;min-width:0;width:max-content;max-width:100%;padding:0 2px}.stats .speed{font-size:clamp(22px,6vh,30px)}.stats .readout{font-size:clamp(9px,2.4vh,11px);gap:1px 6px;margin-top:2px}.stats .unit{font-size:10px}#parkBrake,#parkBrake.engaged{font-size:10px;gap:3px;margin-bottom:2px}#parkBrake .parking-icon{font-size:18px}#parkBrake kbd{display:none}#parkBrake .parking-icon{font-weight:900}.shift-positions button small{display:none}
+ #probeLeft,#probeRight{font-size:12px;padding:6px 8px;min-height:32px}#probeLeft small,#probeRight small{display:none}
+}
+@media(pointer:coarse) and (orientation:landscape){
+ .bottom{left:47%!important;bottom:8px;right:auto!important}.bottom .spacer{display:none}.shifter{left:36%;bottom:7px;width:clamp(74px,10.5vw,128px);height:clamp(82px,22vh,135px)}.shifter-legend{font-size:7px;margin-bottom:3px}.shift-gate{height:calc(100% - 11px)}.shift-positions button{min-height:16px;font-size:clamp(11px,1.5vw,16px)}
+}
+@media(pointer:coarse) and (orientation:portrait){
+ .bottom{left:52%!important;right:6px!important;bottom:78px}.bottom .spacer{display:none}.shifter{left:31%;bottom:78px;width:clamp(74px,20vw,100px);height:112px}.stats .readout{font-size:10px}.stats .speed{font-size:27px}
+}
+@media(pointer:coarse){.cockpit-console{gap:var(--console-gap,6px)}.cockpit-console .stats{gap:2px 5px;padding:2px 3px;grid-template-columns:minmax(39px,.63fr) minmax(0,1.65fr)}.cockpit-console .stats .speed{font-size:clamp(24px,4vw,34px)}.cockpit-console .stats .unit{display:block;font-size:8px}.cockpit-console .stats .readout{gap:3px 5px;font-size:clamp(8px,1.3vw,10px)}.cockpit-console .datum strong{font-size:clamp(10px,1.6vw,12px)}.cockpit-console #parkBrake,.cockpit-console #parkBrake.engaged{font-size:10px;gap:3px}.cockpit-console #parkBrake .parking-icon{font-size:16px}.cockpit-console .shifter{padding:3px 4px}.cockpit-console .shifter-legend{font-size:6px;letter-spacing:.6px}.cockpit-console .shift-gate{height:calc(100% - 9px)}.cockpit-console .shift-positions button{font-size:12px}.cockpit-console .shift-knob{font-size:12px}}
+@media(pointer:coarse) and (max-height:350px){.cockpit-console .stats{padding:1px 2px;gap:1px 4px}.cockpit-console .stats .readout{font-size:8px;gap:2px 4px}.cockpit-console .datum strong{font-size:10px}.cockpit-console #parkBrake,.cockpit-console #parkBrake.engaged{font-size:9px;padding:1px 0}.cockpit-console .stats .speed{font-size:24px}}
+@media(pointer:coarse){#probeLeft.probe-slider,#probeRight.probe-slider{width:clamp(135px,17.5vw,215px);padding:3px 6px 2px;font-size:10px}.probe-row{height:20px;gap:3px}.probe-zero{font-size:9px;padding:3px 4px}.probe-slider input[type=range]{height:27px}.probe-slider input::-webkit-slider-thumb{width:23px;height:23px;margin-top:-9px}.probe-ends{font-size:8px}}
+@media(pointer:coarse){.probe-title{gap:2px}.probe-key{min-width:13px;height:14px;padding:0 2px;font-size:10px}.probe-row{gap:2px}.probe-row output{min-width:22px}}
+@media(pointer:coarse){#coachPanel{max-width:52vw}.coach-buttons{gap:3px}.coach-buttons button,.coach-buttons select{padding:4px 5px;font-size:10px}}
+@media(pointer:coarse) and (max-height:350px){#probeLeft.probe-slider,#probeRight.probe-slider{padding:2px 5px 1px;min-height:0}.probe-row{height:15px}.probe-slider input[type=range]{height:19px}.probe-ends{display:none}.probe-zero{padding:1px 3px}}
+@media(pointer:coarse) and (orientation:landscape){#radarDock{width:clamp(96px,13vw,154px)}#radarScreen{height:clamp(70px,21vh,119px)}#radarToggle{font-size:10px;padding:3px 5px}}
+@media(pointer:coarse){#truckMusicButton{left:62%;bottom:9px;padding:6px 8px;min-width:82px;font-size:11px}}
+@media(pointer:coarse) and (orientation:portrait){#truckMusicButton{left:auto;right:9px;bottom:calc(max(53px,14vh) + 38px);transform:none}#truckMusicButton:active{transform:none}}
+@media(pointer:coarse) and (orientation:portrait){body:has(#radarToggle[aria-pressed="true"]) #truckMusicButton{bottom:calc(max(53px,14vh) + 145px)}}
+@media(pointer:coarse){#truckMusicButton{width:36px;height:36px;min-width:0;padding:4px;bottom:6px}#truckMusicButton .spotify-logo{width:28px;height:28px}}
+@media(pointer:coarse) and (orientation:portrait){#truckMusicButton{bottom:calc(max(53px,14vh) + 38px)}}
+@media(pointer:coarse){#truckMusicButton{height:32px;font-size:10px;padding:0 8px 0 6px;gap:5px;bottom:12px}#truckMusicButton .spotify-logo{width:20px;height:20px}}
+body.mobile-game{overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+body.mobile-game .top{gap:5px;left:6px;right:6px;top:6px}
+body.mobile-game .top .panel{padding:5px}
+body.mobile-game .brand{font-size:12px}
+body.mobile-game .sub{display:none}
+body.mobile-game .top button,body.mobile-game .top select{font-size:11px;padding:5px}
+body.mobile-game #level{max-width:34%;min-width:0}
+body.mobile-game .touch{left:8px;right:8px;bottom:8px}
+body.mobile-game #truckMusicDialog{position:fixed;inset:auto;left:var(--physical-center-x);top:var(--physical-center-y);margin:0;transform:translate(-50%,-50%);max-width:calc(var(--game-width) - 18px);max-height:calc(var(--game-height) - 16px);touch-action:auto}
+body.mobile-rotated #truckMusicDialog{transform:translate(-50%,-50%) rotate(90deg)}
+body.mobile-game #truckMusicDialog input{touch-action:auto}
+body.mobile-game #mirrorPanel{max-height:calc(var(--game-height) - 60px);overflow:auto;overscroll-behavior:contain}
+body.mobile-game #mirrorPanel input,body.mobile-game .probe-slider input{touch-action:none}
+#mobileLaunch{position:absolute;inset:0;z-index:100;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 38%,#2c4853,#101c24 75%);text-align:center;padding:12px}
+#mobileLaunch[hidden]{display:none!important}
+.mobile-launch-card{display:grid;justify-items:center;gap:6px;max-width:90%;color:#deeeef}
+.mobile-launch-card h1{font-size:clamp(18px,4.5vmin,28px);margin:0;letter-spacing:.04em}
+.mobile-launch-card small{color:#8bd8cd;letter-spacing:.18em;font-size:10px}
+.mobile-launch-card p{font-size:12px;color:#c5d4d7;margin:3px 0 8px}
+.mobile-phone{height:62px;width:34px;border:2px solid #87e6d5;border-radius:7px;display:grid;place-items:center;animation:phoneRotate 3.6s ease-in-out infinite;margin:10px 0}
+.mobile-phone:before{content:"";width:21px;height:38px;background:linear-gradient(#91bfd4 45%,#465158 45%);border-radius:2px}
+.mobile-phone:after{content:"";width:9px;height:2px;border-radius:3px;background:#87e6d5;position:absolute;bottom:4px}
+body.mobile-game #environmentDialog{inset:auto;position:fixed;left:var(--physical-center-x);top:var(--physical-center-y);transform:translate(-50%,-50%);width:min(650px,calc(var(--game-width) - 24px));max-width:none;max-height:calc(var(--game-height) - 14px)}
+body.mobile-rotated #environmentDialog{transform:translate(-50%,-50%) rotate(90deg)}
+body.mobile-game #environmentDialog *{touch-action:pan-y}
+body.mobile-game #environmentDialog select{touch-action:manipulation}
+body.mobile-game #truckMusicDialog{position:fixed;left:50%;top:50%;width:min(760px,calc(var(--game-width) - 18px));height:min(570px,calc(var(--game-height) - 16px));max-width:none;max-height:none;transform:translate(-50%,-50%);margin:0}
+body.mobile-rotated #truckMusicDialog,body.mobile-rotated #truckMusicDialog.is-open{transform:translate(-50%,-50%)}
+body.mobile-game #truckMusicDialog.is-open{transform:translate(-50%,-50%)}
+body.mobile-game.mobile-rotated #truckMusicDialog.is-open{transform:translate(-50%,-50%)}
+@media(pointer:coarse){#truckMusicButton .youtube-logo{width:22px;height:18px}#truckMusicButton .youtube-label{font-size:10px}}
+body.mobile-game #mobileLaunch:not([hidden]){z-index:10000}
+body.mobile-game .bottom .help,body.mobile-game .probe-key,body.mobile-game #parkBrake kbd,body.mobile-game .shift-positions small{display:none!important}
+@media(pointer:coarse){.bottom .help,.probe-key,#parkBrake kbd,.shift-positions small{display:none!important}}
+body.cabin3d-ready.mobile-game .touch{left:8px;right:8px;bottom:8px;transform:none;justify-content:flex-end;pointer-events:none;}
+body.cabin3d-ready.mobile-game .touch .steering{position:absolute;left:33.333%;bottom:0;transform:translateX(-50%);pointer-events:auto;}
+body.cabin3d-ready.mobile-game .touch .pedals{margin-left:auto;}
+body.cabin3d-ready.mobile-game #cabHelp{right:23%;bottom:8px;}
+body.cabin3d-ready.mobile-game:has(#cabModal.open) .touch{visibility:hidden;pointer-events:none;}
+@media(pointer:coarse){
+ body.cabin3d-ready .touch{left:8px;right:8px;bottom:8px;transform:none;justify-content:flex-end;pointer-events:none;}
+ body.cabin3d-ready .touch .steering{position:absolute;left:33.333%;bottom:0;transform:translateX(-50%);pointer-events:auto;}
+ body.cabin3d-ready .touch .pedals{margin-left:auto;}
+ body.cabin3d-ready #cabHelp{right:23%;bottom:8px;}
+ body.cabin3d-ready:has(#cabModal.open) .touch{visibility:hidden;pointer-events:none;}
+}
+body.mobile-game #mobileRestore{position:absolute;right:8px;top:8px;z-index:11000;pointer-events:auto;font-size:11px;padding:7px}body.mobile-game #mobileRestore[hidden]{display:none!important}
+body.mobile-game .cab-mirror-hit{touch-action:none;pointer-events:auto}body.mobile-game .cab-mirror-grip{width:26px!important;height:26px!important;min-width:26px;min-height:26px}body.mobile-game .cab-mirror-grip::after{content:'';position:absolute;inset:-9px}body.mobile-game .mirror-drag-icon{pointer-events:auto;width:26px;height:26px}
+body.mobile-game #cabModal .cab-dialog{width:82%;max-width:82%;max-height:90%}body.mobile-game #cabModal .cab-dialog-body{padding-right:44px;touch-action:pan-y;overscroll-behavior:contain}body.mobile-game #cabModal .cab-dialog-body button{touch-action:pan-y}body.mobile-game #cabModal input[type=range]{touch-action:none}body.mobile-game.mobile-rotated #cabModal .cab-dialog-body{touch-action:none}
+body.mobile-game #alert{z-index:30}body.mobile-game #mobileLaunch:not([hidden]){z-index:10000}
+
+body.mobile-game .mobile-select-wrap{position:relative;display:grid;gap:4px;flex:1;min-width:0;max-width:78%}body.mobile-game .mobile-select-button{width:100%;text-align:left}body.mobile-game .mobile-select-list{display:grid;gap:3px;background:#142a38;padding:4px;border:1px solid #527981;border-radius:5px}body.mobile-game .mobile-select-list[hidden]{display:none}body.mobile-game .mobile-select-list button{width:100%}body.mobile-game:has(#cabModal.open) #mobileRestore,body.mobile-game:has(#truckMusicDialog.is-open) #mobileRestore{display:none}body.mobile-game #cabModal .cab-dialog-body{scrollbar-width:thin}body.mobile-game .cab-mirror-hit:active{transform:translate(-50%,-50%)}
+
+/* RC2: only mobile settings narrow to reveal both mirrors. */
+body.mobile-game #cabModal.mirror-live-preview .cab-dialog{width:62%;max-width:62%;max-height:90%}
+body.mobile-game #cabModal.mirror-live-preview header{padding:7px 10px}
+body.mobile-game #cabModal.mirror-live-preview h3{font-size:13px}
+body.mobile-game #cabModal.mirror-live-preview .cab-dialog-body{padding:6px 18px 6px 7px;gap:6px}
+body.mobile-game #cabModal.mirror-live-preview .cab-dialog-body button,body.mobile-game #cabModal.mirror-live-preview .cab-dialog-body select{font-size:11px;min-height:27px;padding:4px 6px}
+body.mobile-game #cabModal.mirror-live-preview .cab-dialog-body label,body.mobile-game #cabModal.mirror-live-preview .cab-dialog-body p,body.mobile-game #cabModal.mirror-live-preview .cab-dialog-body small{font-size:10px;line-height:1.4}
+body.mobile-game #cabModal.mirror-live-preview .cab-mirror-setting{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:5px}
+body.mobile-game #cabModal.mirror-live-preview .cab-mirror-setting section{padding:5px;gap:4px;min-width:0}
+body.mobile-game #cabModal.mirror-live-preview .cab-mirror-setting b,body.mobile-game #cabModal.mirror-live-preview .cab-tab-title{font-size:11px}
+body.mobile-game #cabModal.mirror-live-preview .cab-mirror-setting label{grid-template-columns:42px minmax(0,1fr) 27px;gap:3px;font-size:10px}
+body.mobile-game #cabModal.mirror-live-preview .cab-mirror-setting input{min-width:0;width:100%;max-width:100%}
+body.mobile-game #cabModal.mirror-live-preview .cab-tab-content{padding:5px;gap:5px;min-width:0}
+body.mobile-game #cabModal.mirror-live-preview .cab-row{gap:4px;min-width:0}
+body.mobile-game #cabModal[data-mobile-panel="levels"] .cab-dialog-body{padding-right:30%;grid-template-columns:minmax(0,1fr);touch-action:pan-y}
+body.mobile-game #cabModal[data-mobile-panel="levels"] .cab-stage-groups,body.mobile-game #cabModal[data-mobile-panel="levels"] .cab-stage-group,body.mobile-game #cabModal[data-mobile-panel="levels"] .cab-stage-entries{min-width:0;max-width:100%}
+body.mobile-game #cabModal[data-mobile-panel="levels"] .cab-dialog-body button,body.mobile-game #cabModal[data-mobile-panel="levels"] .cab-dialog-body label{white-space:normal;overflow-wrap:anywhere;min-width:0}
+body.mobile-game #cabModal[data-mobile-panel="levels"] .cab-dialog-body *{touch-action:pan-y}
+body.mobile-game.mobile-rotated #cabModal[data-mobile-panel="levels"] .cab-dialog-body,body.mobile-game.mobile-rotated #cabModal[data-mobile-panel="levels"] .cab-dialog-body *{touch-action:none}
+/* The original 3D parking-brake switch remains visible; enlarged hit regions are mathematical only. */
+
+/* RC4: mobile-only top HUD; retain the three probe buttons. */
+body.mobile-game #cabProbeNav .cab-angle{display:none!important}
+body.mobile-game #cabProbeNav{top:3px;gap:0}
+body.mobile-game #cabProbeNav .cab-probe-buttons{padding:2px}
+body.mobile-game #cabProbeNav button{padding:3px 6px}
+body.mobile-game #cabMission{top:40px;left:50%;transform:translateX(-50%);max-width:min(58vw,440px)}

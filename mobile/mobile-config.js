@@ -1,0 +1,1 @@
+window.TruckMobileConfig=Object.freeze({touchTarget:44,controlScale:1.5,doorGap:4,gripSize:26,gripHitPadding:5,tapSlop:10,cardWidthPercent:62,scrollLanePercent:30,radarVisualTarget:24,radarMaxScale:2,radarRecess:.004,radarForward:.010,youtubeTarget:44});

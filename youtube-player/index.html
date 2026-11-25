@@ -1941,12 +1941,14 @@ const Player = (() => {
           onReady: () => { ytReady = true; resolve(); },
           onStateChange: (e) => {
             if (activeEngine !== 'youtube') return;
+            fire('youtubeplayback', e.data === YT.PlayerState.PLAYING);
             if (e.data === YT.PlayerState.PLAYING) fire('playstate', true);
             else if (e.data === YT.PlayerState.PAUSED) fire('playstate', false);
             else if (e.data === YT.PlayerState.ENDED) fire('ended');
           },
           onError: () => {
             if (activeEngine === 'youtube') {
+              fire('youtubeplayback', false);
               fire('error', 'YouTube playback error');
               playNext();
             }
@@ -1980,6 +1982,7 @@ const Player = (() => {
   // === Core track loading ===
   async function loadTrack(track, autoplay) {
     currentTrack = track;
+    fire('youtubeplayback', false);
 
     if (track.source === 'youtube') {
       // Stop audio engine
@@ -3345,9 +3348,17 @@ const UI = (() => {
   refreshStatus();
   if(truckEmbed){
     openCard();
+    // State only: the cross-origin YouTube iframe does not expose audio samples.
+    const origin=location.protocol==='file:'?'*':location.origin;
+    let lastPlayback=null;
+    function publishPlayback(value,force=false){const playing=value===true;if(!force&&playing===lastPlayback)return;lastPlayback=playing;window.parent.postMessage({type:'truck-youtube-playback',playing},origin);}
+    Player.on('youtubeplayback',publishPlayback);
+    Player.on('trackchange',()=>publishPlayback(Player.getActiveEngine()==='youtube'&&Player.isPlaying()));
+    publishPlayback(false);
     window.addEventListener('message',event=>{
       if(event.source!==window.parent)return;
       if(location.protocol!=='file:'&&event.origin!==location.origin)return;
+      if(event.data?.type==='truck-youtube-playback-query'){publishPlayback(Player.getActiveEngine()==='youtube'&&Player.isPlaying(),true);return;}
       if(event.data && event.data.type==='truck-youtube-open'){openCard();if(new URLSearchParams(location.search).get('device')==='mobile'&&window.__truckPlayerReady&&!window.__mobilePlaylistPrompt&&Library.getAll().length===0){window.__mobilePlaylistPrompt=true;UI.showYouTubeDialog().finally(()=>window.__mobilePlaylistPrompt=false);}}
     });
   }

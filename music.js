@@ -2,6 +2,7 @@
 (function(root){
 'use strict';
 const ytIcon='<svg class="youtube-logo" viewBox="0 0 48 34" width="27" height="21" aria-hidden="true" focusable="false"><rect x="1" y="1" width="46" height="32" rx="9" fill="#ff0033"/><path d="M20 9.5 32 17 20 24.5Z" fill="#fff"/></svg>';
+let youtubePlaying=false;
 function init({onOpen=()=>{},onClose=()=>{}}={}){
   const button=document.createElement('button');
   button.id='truckMusicButton';button.type='button';
@@ -17,7 +18,7 @@ function init({onOpen=()=>{},onClose=()=>{}}={}){
   dialog.setAttribute('aria-hidden','true');
   const frame=document.createElement('iframe');frame.id='truckYoutubeFrame';
   frame.title='YouTube Playlist 播放器';
-  frame.src='youtube-player/index.html?truckEmbed=1'+(window.TruckMobileMusic?'&device=mobile':'');
+  frame.src='youtube-player/index.html?truckEmbed=1&v=16-RC7'+(window.TruckMobileMusic?'&device=mobile':'');
   frame.setAttribute('allow','autoplay; encrypted-media; picture-in-picture');
   frame.setAttribute('allowtransparency','true');
   frame.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
@@ -53,12 +54,14 @@ function init({onOpen=()=>{},onClose=()=>{}}={}){
   button.addEventListener('click',show);
   backdrop.addEventListener('click',hide);
   document.addEventListener('keydown',e=>{if(open&&e.key==='Escape'){hide();}});
+  frame.addEventListener('load',()=>{youtubePlaying=false;try{frame.contentWindow.postMessage({type:'truck-youtube-playback-query'},location.protocol==='file:'?'*':location.origin);}catch(_){}});
   window.addEventListener('message',event=>{
     if(event.source!==frame.contentWindow)return;
-    if(window.TruckMobileMusic&&location.protocol!=='file:'&&event.origin!==location.origin)return;
+    if(location.protocol!=='file:'&&event.origin!==location.origin)return;
+    if(event.data?.type==='truck-youtube-playback'&&typeof event.data.playing==='boolean')youtubePlaying=event.data.playing;
     if(event.data && event.data.type==='truck-youtube-close')hide();
   });
   return {open:show,close:hide,button,dialog,frame,isOpen:()=>open};
 }
-root.TruckMusic={init};
+root.TruckMusic={init,isYoutubePlaying:()=>youtubePlaying};
 })(globalThis);

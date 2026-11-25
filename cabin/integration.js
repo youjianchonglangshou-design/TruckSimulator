@@ -1,4 +1,4 @@
-/* TruckSimulator v6.0.0-alpha.REBUILD-DEV.16-RC6 — real-game bridge into user-approved RC15 Three.js shell.
+/* TruckSimulator v6.0.0-alpha.REBUILD-DEV.16-RC7 — real-game bridge into user-approved RC15 Three.js shell.
    No duplicate physics, stages, weather, music player, or quality controller. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id), b=window.TruckCabinBridge, M=window.TruckCabinRebuild, U=window.TruckCabinUserLayout;
@@ -104,6 +104,7 @@ function init3d(){
  registry.register("radar",radarCabin);
  createDisplaySurface('youtube','youtube-logo-placeholder',.092,.068,[-.198,0,.066],512,384);
  drawYoutube();
+ TruckV6MusicCabinInstance().createWaveSurface(T,local('youtube-audio-screen-BLANK').parent);
  registerMediaButtons();
  applyAllIconSizes();
  window.TruckMobileCabin?.scaleMeshes(mounts.parts.get('control-bank')?.content,ui.radarGroup);
@@ -204,7 +205,7 @@ function updateControlCalibration(key,field,axis,value){
  applyNamedControlCalibration(key);
 }
 
-var TruckV6MusicCabinPrivate;function TruckV6MusicCabinInstance(){return TruckV6MusicCabinPrivate||(TruckV6MusicCabinPrivate=TruckV6MusicCabin.createMusicPlayerSystemCabin({get displaySurfaces(){return displaySurfaces}}));}
+var TruckV6MusicCabinPrivate;function TruckV6MusicCabinInstance(){return TruckV6MusicCabinPrivate||(TruckV6MusicCabinPrivate=TruckV6MusicCabin.createMusicPlayerSystemCabin({get displaySurfaces(){return displaySurfaces},isYoutubePlaying:()=>window.TruckMusic?.isYoutubePlaying?.()}));}
 function drawYoutube(...args){return TruckV6MusicCabinInstance().drawYoutube(...args)}
 // Seven real RC15 physical switches: no HTML hitboxes or independent screen coordinates.
 // The translucent artwork is printed directly onto each existing extruded Mesh's local face.
@@ -479,7 +480,7 @@ function initUi(){
  ui.weatherText=ui.weather.querySelector('span');
  ui.danger=add(host,'div','cabDanger','');ui.danger.hidden=true;
  ui.help=add(host,'button','cabHelp','?','cab-control');on(ui.help,()=>openModal('help'));
- add(host,'span','cabBrand','TERMINAL DRIVER · v6.0.0-alpha.REBUILD-DEV.16-RC6');
+ add(host,'span','cabBrand','TERMINAL DRIVER · v6.0.0-alpha.REBUILD-DEV.16-RC7');
  const make=(id,title,func,cls='')=>{const btn=add(host,'button',id,title,'cab-physical '+cls);btn.title=title;btn.setAttribute('aria-label',title);on(btn,func);return btn};
  ui.returnCab=add(host,'button','cabReturn','上車','cab-control');on(ui.returnCab,()=>action('view'));
  // The seven physical door/wheel switches are Three.js meshes, not HTML buttons.
@@ -623,6 +624,7 @@ function tick(ms){if(window.TruckCabinStartup?.isCancelled?.()){stopFor2D();retu
  if(ms-lastHud>=75||!first3dFrame){updateHud(s);lastHud=ms}
  registry.invoke("mirror","update",s);
  TruckV6WeatherCabinInstance().rotate(ms);
+ TruckV6MusicCabinInstance().updateYoutubeWave(ms);
   if(window.TruckMobileCabin&&visible&&Math.abs(s.probe)<1){camera.updateMatrixWorld();window.TruckMobileCabin.fitRadar(ui.radarGroup,()=>mobileProjectedBounds(physicalButtons.find(x=>x.kind==='radar')?.mesh),worldW,worldH);}
   const __webglStart=performance.now();if(visible)renderer.render(scene,camera);else renderer.clear();window.TruckRenderDiagnostics?.sample('webglMs',performance.now()-__webglStart);
  updateAnchors(s);
@@ -635,7 +637,7 @@ function tick(ms){if(window.TruckCabinStartup?.isCancelled?.()){stopFor2D();retu
 function init(){try{
  if(window.TruckCabinStartup?.isCancelled?.())return;
  init3d();initUi();resize();host.hidden=false;
- window.TruckCabinView={active:true,stopFor2D,paint,renderer,scene,camera,mounts,shell,version:'6.0.0-alpha.REBUILD-DEV.16-RC6',getDeviceDiagnostics:()=>registry.status(),getQualityDiagnostics:()=>({tier:b.snapshot().quality,webglPixelRatio:appliedPixelRatio,mirrorFrames:frame,contextLossCount}),displaySurfaces,getDisplayCalibration:()=>displayCal.normalize(displayCalibration),physicalButtons,getBrakeCalibration:()=>TruckV6BrakeCabinInstance().getCalibration(),getState:()=>b.snapshot(),getPaint:()=>paint.get(),getInteractionCalibration:()=>interactionCal.normalize(interactionCalibration),getWiperHitCorners:()=>wiperHitCorners()?.map(p=>({x:p.x,y:p.y,z:p.z}))||null};
+ window.TruckCabinView={active:true,stopFor2D,paint,renderer,scene,camera,mounts,shell,version:'6.0.0-alpha.REBUILD-DEV.16-RC7',getDeviceDiagnostics:()=>registry.status(),getQualityDiagnostics:()=>({tier:b.snapshot().quality,webglPixelRatio:appliedPixelRatio,mirrorFrames:frame,contextLossCount}),displaySurfaces,getDisplayCalibration:()=>displayCal.normalize(displayCalibration),physicalButtons,getBrakeCalibration:()=>TruckV6BrakeCabinInstance().getCalibration(),getState:()=>b.snapshot(),getPaint:()=>paint.get(),getInteractionCalibration:()=>interactionCal.normalize(interactionCalibration),getWiperHitCorners:()=>wiperHitCorners()?.map(p=>({x:p.x,y:p.y,z:p.z}))||null};
  requestAnimationFrame(tick);
  }catch(e){console.error('RC15 integration failed',e);if(renderer)renderer.dispose();document.body.classList.remove('cabin3d-ready');host.hidden=true;window.TruckCabinStartup?.fail(e);}
 }

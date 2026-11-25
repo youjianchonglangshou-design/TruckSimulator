@@ -42,7 +42,7 @@ function drawInstrument(s){
  right.restore();hitsTime.texture.needsUpdate=true;
  for(const [id,label,value] of [
   ['angle','聯結角',`${Math.round(s.angle)}°`],
-  ['distance',s.mission?.route==='out'?'迄點距離':'後端距離',s.distance===null?'—':s.distance.toFixed(1)+' m']
+  ['distance',s.coupling?'銜接距離':s.mission?.route==='out'?'迄點距離':'後端距離',s.distance===null?'—':s.distance.toFixed(1)+' m']
  ]){
   const d=svc.displaySurfaces[id],x=d.canvas.getContext('2d');x.clearRect(0,0,d.canvas.width,d.canvas.height);
   d.mesh.visible=s.difficultyMode===0&&s.view===0;

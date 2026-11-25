@@ -5,14 +5,18 @@
  function record(error){if(error&&bootErrors.length<16)bootErrors.push(error);latestError=bootErrors[0]||error||latestError;}
  function detail(){return bootErrors.filter(Boolean).join(' | ').slice(0,500);}
  const card=()=>document.getElementById('cabStartup');
+ const panel=()=>document.getElementById('cabStartupCard');
  const msg=()=>document.getElementById('cabStartupMessage');
  const actions=()=>document.getElementById('cabStartupActions');
- let limit=null;
- function begin(timeout=19000){if(limit!==null||ready||failed||declined)return;limit=setTimeout(()=>fail('3D 駕駛艙載入逾時。可能是 Three.js 網路來源或 WebGL 無法使用。'),timeout);}
+ let limit=null,revealTimer=null;
+ function clearReveal(){clearTimeout(revealTimer);revealTimer=null;}
+ function begin(timeout=19000){if(limit!==null||ready||failed||declined)return;
+  revealTimer=setTimeout(()=>{revealTimer=null;if(!ready&&!failed&&!declined)panel().hidden=false;},3000);
+  limit=setTimeout(()=>fail('3D 駕駛艙載入逾時。可能是 Three.js 網路來源或 WebGL 無法使用。'),timeout);}
  function fail(error){
   if(failed||declined)return;
-  failed=true;ready=false;clearTimeout(limit);
-  document.body.classList.add('cabin3d-starting');card().hidden=false;
+  failed=true;ready=false;clearTimeout(limit);clearReveal();
+  document.body.classList.add('cabin3d-starting');card().hidden=false;panel().hidden=false;
   document.getElementById('cabStartupTitle').textContent='3D 駕駛艙載入失敗';
   const info=String(error?.message||error||latestError||'未知錯誤').slice(0,250);
   msg().textContent=info+(latestError&&!info.includes(latestError)?'（最近錯誤：'+latestError.slice(0,120)+'）':'')+'。原版駕駛艙不會自動覆蓋新車艙。';
@@ -21,7 +25,7 @@
  }
  function succeed(){
   if(ready||declined)return;
-  ready=true;failed=false;clearTimeout(limit);
+  ready=true;failed=false;clearTimeout(limit);clearReveal();panel().hidden=true;
   document.body.classList.remove('cabin3d-starting','cabin3d-failed');
   card().hidden=true;
  }
@@ -42,7 +46,7 @@
  window.TruckCabinStartup={begin,ready:succeed,fail,failureDetail:detail,isCancelled:()=>declined};
  document.getElementById('cabRetry3D').addEventListener('click',()=>location.reload());
  document.getElementById('cabUse2D').addEventListener('click',()=>{
-  declined=true;clearTimeout(limit);window.TruckCabinView?.stopFor2D?.();document.body.classList.remove('cabin3d-starting','cabin3d-failed','cabin3d-ready');
+  declined=true;clearTimeout(limit);clearReveal();panel().hidden=true;window.TruckCabinView?.stopFor2D?.();document.body.classList.remove('cabin3d-starting','cabin3d-failed','cabin3d-ready');
   card().hidden=true;document.getElementById('cabin-ui-root').hidden=true;
  });
 })();

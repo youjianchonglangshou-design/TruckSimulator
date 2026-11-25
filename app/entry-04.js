@@ -49,9 +49,14 @@
   if(missing.length)throw Error('本機車艙模組未載入：'+missing.join('；'));
  }
  async function start(){try{
+  // Mobile launch must precede the first-frame watchdog and GPU initialization.
+  await MobileLandscape.whenStarted();
+  if(window.TruckCabinStartup?.isCancelled?.())return;
+  window.TruckCabinStartup?.begin(MobileLandscape.mobile?45000:19000);
   await verifyLocal();
   if(!window.THREE?.WebGLRenderer){
    for(const src of sources){
+    if(window.TruckCabinStartup?.isCancelled?.())return;
     try{await load(src,4800);if(window.THREE?.WebGLRenderer)break}
     catch(e){console.warn('RC12 Three.js fallback',e.message)}
    }

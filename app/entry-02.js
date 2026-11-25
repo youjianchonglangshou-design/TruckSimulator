@@ -3,6 +3,7 @@ const MobileLandscape=(()=>{
  const body=document.body, originalStyle=document.querySelector('head style'), originalCSS=originalStyle.textContent;
  const mobile=matchMedia('(pointer:coarse)').matches||(navigator.maxTouchPoints>0&&/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
  let rotated=false,started=!mobile,busy=false,width=innerWidth,height=innerHeight,signature='',onChange=()=>{},onInterrupt=()=>{};
+ let resolveStarted;const startPromise=new Promise(resolve=>{resolveStarted=resolve});if(started)resolveStarted();
  const launch=document.getElementById('mobileLaunch'),begin=document.getElementById('mobileStart'),full=document.getElementById('full');
  const nativeFull=()=>document.fullscreenElement||document.webkitFullscreenElement;
  const safe=document.createElement('div');safe.style.cssText='position:fixed;visibility:hidden;pointer-events:none;inset:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';if(mobile)document.documentElement.append(safe);
@@ -31,7 +32,7 @@ const MobileLandscape=(()=>{
  function rect(el){const r=el.getBoundingClientRect();if(!mobile)return r;const a=point({clientX:r.left,clientY:r.top}),b=point({clientX:r.right,clientY:r.bottom});const left=Math.min(a.x,b.x),right=Math.max(a.x,b.x),top=Math.min(a.y,b.y),bottom=Math.max(a.y,b.y);return {x:left,y:top,left,right,top,bottom,width:right-left,height:bottom-top};}
  function refresh(){const change=apply();if(mobile){full.textContent=nativeFull()?'退出全螢幕':started?'恢復全螢幕':'全螢幕';full.title='優先使用裝置原生全螢幕；不支援時維持橫式模式';}if(change)onChange();}
  const bounded=p=>Promise.race([Promise.resolve(p),new Promise(resolve=>setTimeout(resolve,1800))]);
- async function enter(){if(busy)return;busy=true;begin.disabled=true;try{const el=document.documentElement;const request=el.requestFullscreen||el.webkitRequestFullscreen;if(!nativeFull()&&request){try{await bounded(request.call(el));}catch{}}if(nativeFull()&&screen.orientation?.lock){try{await bounded(screen.orientation.lock('landscape'));}catch{}}}finally{started=true;busy=false;begin.disabled=false;launch.hidden=true;refresh();onInterrupt();onChange();}}
+ async function enter(){if(busy)return;busy=true;begin.disabled=true;try{const el=document.documentElement;const request=el.requestFullscreen||el.webkitRequestFullscreen;if(!nativeFull()&&request){try{await bounded(request.call(el));}catch{}}if(nativeFull()&&screen.orientation?.lock){try{await bounded(screen.orientation.lock('landscape'));}catch{}}}finally{started=true;busy=false;begin.disabled=false;launch.hidden=true;refresh();onInterrupt();onChange();resolveStarted();}}
  function toggle(){if(!mobile)return false;if(nativeFull()){try{screen.orientation?.unlock?.()}catch{}const exit=document.exitFullscreen||document.webkitExitFullscreen;try{Promise.resolve(exit?.call(document)).catch(()=>{})}catch{} }else enter();return true;}
  if(mobile){launch.hidden=false;begin.addEventListener('click',enter);apply();for(const event of ['resize','orientationchange'])window.addEventListener(event,refresh);screen.orientation?.addEventListener?.('change',refresh);document.addEventListener('fullscreenchange',refresh);document.addEventListener('webkitfullscreenchange',refresh);window.visualViewport?.addEventListener('resize',refresh);window.visualViewport?.addEventListener('scroll',refresh);document.addEventListener('visibilitychange',()=>{onInterrupt();refresh()});window.addEventListener('blur',()=>onInterrupt());window.addEventListener('pageshow',refresh);}
  // Only presentation labels; never change keyboard bindings or touch input.
@@ -47,5 +48,5 @@ const MobileLandscape=(()=>{
   const hint=document.querySelector('#mirrorPanel .hint');if(hint)hint.textContent=touch?'左右獨立設定，鏡面也可直接拖曳。停車調整後點擊手煞車解除，再切換檔位。':'左右獨立設定，鏡面也可直接拖曳。停車調整後按 B 解除手煞車，再切換檔位。';
  }
  syncTouchHints();matchMedia('(pointer:coarse)').addEventListener?.('change',syncTouchHints);
- return {mobile,point,rect,apply,refresh,toggle,get width(){return width},get height(){return height},get rotated(){return rotated},get paused(){return mobile&&!started||document.hidden},bind(change,interrupt){onChange=change;onInterrupt=interrupt;refresh()}};
+ return {mobile,point,rect,apply,refresh,toggle,whenStarted:()=>startPromise,get width(){return width},get height(){return height},get rotated(){return rotated},get paused(){return mobile&&!started||document.hidden},bind(change,interrupt){onChange=change;onInterrupt=interrupt;refresh()}};
 })();

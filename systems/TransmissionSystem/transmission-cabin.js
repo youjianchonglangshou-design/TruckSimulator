@@ -8,7 +8,8 @@ function cancelDrag(){shifterDrag=null;}
 function pickShifterKnob(e){
  if(!document.body.classList.contains('cabin3d-ready')||!svc.mounts?.root.visible||(svc.ui.modal?.classList.contains('open'))||svc.b.snapshot().view!==0)return null;
  const rect=svc.canvas.getBoundingClientRect();if(!rect.width||!rect.height)return null;
- svc.pointerNdc.set(2*(e.clientX-rect.left)/rect.width-1,1-2*(e.clientY-rect.top)/rect.height);
+ if(document.body.classList.contains('mobile-rotated')){const p=svc.b.point(e);svc.pointerNdc.set(2*p.x/svc.canvas.clientWidth-1,1-2*p.y/svc.canvas.clientHeight)}
+ else svc.pointerNdc.set(2*(e.clientX-rect.left)/rect.width-1,1-2*(e.clientY-rect.top)/rect.height);
  svc.camera.updateMatrixWorld();svc.mounts.root.updateWorldMatrix(true,true);
  svc.raycaster.setFromCamera(svc.pointerNdc,svc.camera);
  return svc.raycaster.intersectObjects([svc.local('shifter-knob'),svc.local('shifter-knob-rim')].filter(Boolean),false)[0]?.object||null;
@@ -26,14 +27,16 @@ function startShifterDrag(e){
  const s=svc.b.snapshot();
  if(s.done||s.broken||s.coach||s.view!==0||!pickShifterKnob(e))return false;
  const axis=gearAxisInPixels();if(!axis)return false;
- shifterDrag={id:e.pointerId,x:e.clientX,y:e.clientY,initial:s.gear*.085,
+ const rotated=document.body.classList.contains('mobile-rotated'),pt=rotated?svc.b.point(e):{x:e.clientX,y:e.clientY};
+ shifterDrag={id:e.pointerId,x:pt.x,y:pt.y,rotated,initial:s.gear*.085,
   preview:s.gear*.085,moved:false,axis};
  svc.setPhysicalFeedback(svc.physicalHover,0);svc.physicalHover=null;svc.hidePhysicalTooltip();
  return true;
 }
 function moveShifterDrag(e){
  const d=shifterDrag;if(!d||d.id!==e.pointerId)return;
- const mx=e.clientX-d.x,my=e.clientY-d.y;
+ const pt=d.rotated?svc.b.point(e):{x:e.clientX,y:e.clientY};
+ const mx=pt.x-d.x,my=pt.y-d.y;
  d.moved ||= Math.hypot(mx,my)>5;
  const fraction=(mx*d.axis.dx+my*d.axis.dy)/d.axis.len2;
  d.preview=svc.cl(d.initial+.170*fraction,-.085,.085);

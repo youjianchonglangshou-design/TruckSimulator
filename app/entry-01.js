@@ -7,7 +7,8 @@
  const card=()=>document.getElementById('cabStartup');
  const msg=()=>document.getElementById('cabStartupMessage');
  const actions=()=>document.getElementById('cabStartupActions');
- const limit=setTimeout(()=>fail('3D 駕駛艙載入逾時。可能是 Three.js 網路來源或 WebGL 無法使用。'),19000);
+ let limit=null;
+ function begin(timeout=19000){if(limit!==null||ready||failed||declined)return;limit=setTimeout(()=>fail('3D 駕駛艙載入逾時。可能是 Three.js 網路來源或 WebGL 無法使用。'),timeout);}
  function fail(error){
   if(failed||declined)return;
   failed=true;ready=false;clearTimeout(limit);
@@ -20,7 +21,7 @@
  }
  function succeed(){
   if(ready||declined)return;
-  ready=true;clearTimeout(limit);
+  ready=true;failed=false;clearTimeout(limit);
   document.body.classList.remove('cabin3d-starting','cabin3d-failed');
   card().hidden=true;
  }
@@ -38,10 +39,10 @@
   const message=e.reason?.message||String(e.reason||'未知 Promise 錯誤');
   record('非同步執行失敗 — '+message);
  });
- window.TruckCabinStartup={ready:succeed,fail,failureDetail:detail,isCancelled:()=>declined};
+ window.TruckCabinStartup={begin,ready:succeed,fail,failureDetail:detail,isCancelled:()=>declined};
  document.getElementById('cabRetry3D').addEventListener('click',()=>location.reload());
  document.getElementById('cabUse2D').addEventListener('click',()=>{
-  declined=true;clearTimeout(limit);document.body.classList.remove('cabin3d-starting','cabin3d-failed','cabin3d-ready');
+  declined=true;clearTimeout(limit);window.TruckCabinView?.stopFor2D?.();document.body.classList.remove('cabin3d-starting','cabin3d-failed','cabin3d-ready');
   card().hidden=true;document.getElementById('cabin-ui-root').hidden=true;
  });
 })();

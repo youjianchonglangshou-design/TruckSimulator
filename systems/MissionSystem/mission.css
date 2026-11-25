@@ -1,0 +1,13 @@
+#cabModal .mission-config{border-top:1px solid #436c79;padding:10px 2px 2px;display:grid;gap:8px;min-width:0}
+#cabModal .mission-config[hidden]{display:none}
+#cabModal .mission-heading{font-size:12px;font-weight:700;color:#88ded3;margin-top:3px}
+#cabModal .mission-options,#cabModal .mission-directions{display:grid;gap:5px}
+#cabModal .mission-directions{grid-template-columns:repeat(2,minmax(0,1fr))}
+#cabModal .cab-dialog-body .mission-option{display:flex;align-items:center;justify-content:flex-start;gap:7px;min-width:0;padding:7px 8px;border:1px solid #395c69;border-radius:5px;background:#233c4b;cursor:pointer;font-size:13px}
+#cabModal .mission-option:has(input:checked){border-color:#75e6cc;background:#126e66}
+#cabModal .mission-option:has(input:disabled){opacity:.52;cursor:default}
+#cabModal .mission-option input{accent-color:#79dfcf;margin:0;flex:none;width:16px;height:16px}
+#cabModal .mission-summary{border-top:1px solid #436c79;padding-top:8px;display:grid;gap:7px;text-align:center}
+#cabModal .mission-pair{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px}
+#cabModal .mission-pair div{display:grid;gap:4px}#cabModal .mission-pair small,#cabModal .mission-note{color:#b1cbd1;font-size:12px;margin:0}#cabModal .mission-pair strong{font-size:13px;overflow-wrap:anywhere}#cabModal .mission-arrow{color:#88ded3}
+#cabModal .mission-preview svg{display:block;width:100%;max-height:110px}#cabModal .mission-stars{font-size:23px;color:#ffd268;letter-spacing:1px;font-weight:bold}#cabModal button.mission-start{background:#126e66;border:1px solid #75e6cc;min-height:38px;color:#e9f7fa;border-radius:6px;text-align:center;font-weight:700}

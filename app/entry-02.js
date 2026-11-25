@@ -1,0 +1,2 @@
+/* Desktop adapter; mobile implementation is loaded exclusively by mobile entry. */
+const MobileLandscape=window.TruckMobileFullscreen?window.TruckMobileFullscreen():Object.freeze({mobile:false,rotated:false,point:e=>({x:e.clientX,y:e.clientY}),rect:el=>el.getBoundingClientRect(),apply:()=>false,refresh:()=>{},toggle:()=>false,whenStarted:()=>Promise.resolve(),get width(){return innerWidth},get height(){return innerHeight},get paused(){return document.hidden},bind(){}});

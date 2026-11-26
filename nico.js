@@ -84,15 +84,15 @@ function update(p,s,P,dt){if(!p)return null;const bodies=[P.tractor(s),P.trailer
 // Screen-facing billboard as in the prototype: the foot is a fixed world point,
 // texture stays upright while each camera has its own perspective and mirroring.
 function sprite(p,c,rect,cameraPoint,project,now){
- const img=imageAt(now);if(!img||p.hidden)return null;
- const foot={x:p.x,y:.025,z:p.z},cp=cameraPoint(foot,c);if(cp.z<=.12)return null;
+ const img=imageAt(now);if(!img||p.hidden||p.groundHeight&&Math.hypot(p.x-c.x,p.z-c.z)>110)return null;
+ const base=p.groundHeight?.(p)??0,foot={x:p.x,y:base+.025,z:p.z},cp=cameraPoint(foot,c);if(cp.z<=.12)return null;
  const f=rect.w/(2*Math.tan(c.fov*Math.PI/360)),unit=f/cp.z,pos=project(foot,c,rect);if(!pos)return null;
  const k=defaults.scale*unit,x=pos[0]-defaults.anchorX*k,y=pos[1]-defaults.anchorY*k,w=img.naturalWidth*k,h=img.naturalHeight*k;
  if(x+w<rect.x||x>rect.x+rect.w||y+h<rect.y||y>rect.y+rect.h)return null;
- return {nico:true,ground:false,d:cameraPoint({x:p.x,y:1,z:p.z},c).z,img,x,y,w,h};
+ return {nico:true,ground:false,d:cameraPoint({x:p.x,y:base+1,z:p.z},c).z,img,x,y,w,h};
 }
 function draw(ctx,item){ctx.drawImage(item.img,item.x,item.y,item.w,item.h);}
-function groundFaces(p,now){if(p.hidden)return [];const result=[],phase=now/1000*2*Math.PI/2.2,pulse=.5+.5*Math.sin(phase),make=(t,k,y)=>({x:p.x+defaults.ringX*k*Math.cos(t),y,z:p.z+defaults.ringZ*k*Math.sin(t)});let shadow=[];for(let i=0;i<32;i++){shadow.push(make(i*Math.PI/16,.86,.052));}result.push({v:shadow,c:'rgba(20,33,38,.25)'});for(let i=0;i<32;i++){const a=i*Math.PI/16,b=(i+1)*Math.PI/16;result.push({v:[make(a,1,.057),make(b,1,.057),make(b,.90,.057),make(a,.90,.057)],c:`rgba(111,255,178,${.62+.38*pulse})`});}return result;}
+function groundFaces(p,now){if(p.hidden)return [];const result=[],phase=now/1000*2*Math.PI/2.2,pulse=.5+.5*Math.sin(phase),make=(t,k,y)=>({x:p.x+defaults.ringX*k*Math.cos(t),y,z:p.z+defaults.ringZ*k*Math.sin(t)});let shadow=[];for(let i=0;i<32;i++){shadow.push(make(i*Math.PI/16,.86,.052));}result.push({v:shadow,c:'rgba(20,33,38,.25)'});for(let i=0;i<32;i++){const a=i*Math.PI/16,b=(i+1)*Math.PI/16;result.push({v:[make(a,1,.057),make(b,1,.057),make(b,.90,.057),make(a,.90,.057)],c:`rgba(111,255,178,${.62+.38*pulse})`});}if(p.groundHeight)for(const f of result){f.depth3D=true;for(const v of f.v){v.x=p.x+(v.x-p.x)*.6;v.z=p.z+(v.z-p.z)*.6;v.y+=p.groundHeight(v);}}return result;}
 // Read-only decoded frame access for the independent settings preview.
 function previewFrame(index){const i=((Math.floor(index)%frames.length)+frames.length)%frames.length;return valid(frames[i])?frames[i]:valid(original)?original:null;}
 root.NicoGuide=Object.freeze({version:'1.1',defaults,avoidance,hornRange,requestYield,create,update,frameCount:frames.length,waveSpeedRange,getWaveSpeed,setWaveSpeed,imageAt,previewFrame,place,clearance,sprite,draw,groundFaces,ready:()=>frames.every(valid)});

@@ -48,6 +48,12 @@ function guidanceFrame(g,pulse){
 }
 function placeNico(){
  const g=guidanceGoal(svc.level),q=svc.P.levels[svc.level],N=globalThis.NicoGuide;
+ // A through-route marshal has its own waiting point, not a parking bay.
+ if(q.scene?.driveThrough&&q.scene.nicoGoal&&N){
+  const scene=q.scene;svc.nicoPlacement=N.create(scene.nicoGoal(),svc.P.obstacles(svc.level),scene.nicoBounds,svc.P);
+  svc.nicoPlacement.groundHeight=scene.surfaceHeight;
+  return;
+ }
  svc.nicoPlacement=g&&N?N.create(g,svc.P.obstacles(svc.level),q.scene?.bounds|| (p=>Math.abs(p.x)<34&&p.z>-36&&p.z<41),svc.P):null;
 }
 function buildGuidance(now){
@@ -55,7 +61,7 @@ function buildGuidance(now){
  const prev=svc.faces;svc.faces=[];const phase=now/1000*2*Math.PI/2.2,pulse=.5+.5*Math.sin(phase);
  for(const m of guidanceTurns(svc.level,svc.s))if(Math.hypot(m.x-svc.s.x,m.z-svc.s.z)<110)guidanceTurnArrow(m,pulse,phase);
  const g=guidanceGoal(svc.level);if(g&&guidanceGoalVisible(svc.level,svc.s)&&Math.hypot(g.x-svc.s.x,g.z-svc.s.z)<110){guidanceFrame(g,pulse);if(!svc.nicoPlacement||!globalThis.NicoGuide?.imageAt(now))guidanceDownArrow(g,pulse,phase);}
- if(svc.nicoPlacement&&globalThis.NicoGuide?.imageAt(now))svc.faces.push(...NicoGuide.groundFaces(svc.nicoPlacement,now));
+ if(svc.nicoPlacement&&(!svc.nicoPlacement.groundHeight||Math.hypot(svc.nicoPlacement.x-svc.s.x,svc.nicoPlacement.z-svc.s.z)<110)&&globalThis.NicoGuide?.imageAt(now))svc.faces.push(...NicoGuide.groundFaces(svc.nicoPlacement,now));
  const result=svc.faces;svc.faces=prev;return result;
 }
 function guideOccluded(p,c,obstacles){

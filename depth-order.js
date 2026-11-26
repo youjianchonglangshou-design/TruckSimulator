@@ -4,7 +4,8 @@
  */
 (function(root){'use strict';
 const EPS=1e-6,GROUND=.06;
-const ground=f=>f.v.every(p=>p.y<=GROUND);
+// Sloping scene faces must participate in world-space visibility, even at y=0.
+const ground=f=>!f.depth3D&&f.v.every(p=>p.y<=GROUND);
 function plane(f){const a=f.v[0];for(let i=1;i<f.v.length-1;i++){const b=f.v[i],c=f.v[i+1],ux=b.x-a.x,uy=b.y-a.y,uz=b.z-a.z,vx=c.x-a.x,vy=c.y-a.y,vz=c.z-a.z;let x=uy*vz-uz*vy,y=uz*vx-ux*vz,z=ux*vy-uy*vx,n=Math.hypot(x,y,z);if(n>EPS*EPS){x/=n;y/=n;z/=n;return {x,y,z,d:-(x*a.x+y*a.y+z*a.z)}}}return null}
 const dist=(p,q)=>p.x*q.x+p.y*q.y+p.z*q.z+p.d;
 function classify(f,p){if(p.axis!==undefined){const b=bounds(f),k=p.axis,d=p.d;return (b[k+3]+d>EPS?1:0)|(b[k]+d< -EPS?2:0)}let flags=0;for(const q of f.v){const d=dist(p,q);if(d>EPS)flags|=1;else if(d< -EPS)flags|=2;if(flags===3)break}return flags}

@@ -115,3 +115,10 @@ body.mobile-game #cabProbeNav{top:3px;gap:0}
 body.mobile-game #cabProbeNav .cab-probe-buttons{padding:2px}
 body.mobile-game #cabProbeNav button{padding:3px 6px}
 body.mobile-game #cabMission{top:40px;left:50%;transform:translateX(-50%);max-width:min(58vw,440px)}
+
+/* RC11: iOS long-press is a driving input, not text selection. */
+body.mobile-game .touch,body.mobile-game .touch button[data-key],body.mobile-game .touch button[data-key] *{
+ -webkit-touch-callout:none;
+ -webkit-user-select:none;
+ user-select:none;
+}

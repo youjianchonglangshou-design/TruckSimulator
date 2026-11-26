@@ -92,7 +92,15 @@ function sprite(p,c,rect,cameraPoint,project,now){
  return {nico:true,ground:false,d:cameraPoint({x:p.x,y:base+1,z:p.z},c).z,img,x,y,w,h};
 }
 function draw(ctx,item){ctx.drawImage(item.img,item.x,item.y,item.w,item.h);}
-function groundFaces(p,now){if(p.hidden)return [];const result=[],phase=now/1000*2*Math.PI/2.2,pulse=.5+.5*Math.sin(phase),make=(t,k,y)=>({x:p.x+defaults.ringX*k*Math.cos(t),y,z:p.z+defaults.ringZ*k*Math.sin(t)});let shadow=[];for(let i=0;i<32;i++){shadow.push(make(i*Math.PI/16,.86,.052));}result.push({v:shadow,c:'rgba(20,33,38,.25)'});for(let i=0;i<32;i++){const a=i*Math.PI/16,b=(i+1)*Math.PI/16;result.push({v:[make(a,1,.057),make(b,1,.057),make(b,.90,.057),make(a,.90,.057)],c:`rgba(111,255,178,${.62+.38*pulse})`});}if(p.groundHeight)for(const f of result){f.depth3D=true;for(const v of f.v){v.x=p.x+(v.x-p.x)*.6;v.z=p.z+(v.z-p.z)*.6;v.y+=p.groundHeight(v);}}return result;}
+function groundFaces(p,now){if(p.hidden)return [];const result=[],phase=now/1000*2*Math.PI/2.2,pulse=.5+.5*Math.sin(phase),make=(t,k,y)=>({x:p.x+defaults.ringX*k*Math.cos(t),y,z:p.z+defaults.ringZ*k*Math.sin(t)});let shadow=[];for(let i=0;i<32;i++){shadow.push(make(i*Math.PI/16,.86,.052));}result.push({v:shadow,c:'rgba(20,33,38,.25)'});for(let i=0;i<32;i++){const a=i*Math.PI/16,b=(i+1)*Math.PI/16;result.push({v:[make(a,1,.057),make(b,1,.057),make(b,.90,.057),make(a,.90,.057)],c:`rgba(111,255,178,${.62+.38*pulse})`});}if(p.groundHeight){
+ // Mountain marshal: keep every ground decal on ONE local tangent plane.
+ // Independent vertex heights on a curved road made the 32-gon nonplanar,
+ // allowing the BSP to recursively reinsert the same unsplit polygon.
+ const h=p.groundHeight,base=h(p),d=.5;
+ const gx=(h({x:p.x+d,z:p.z})-h({x:p.x-d,z:p.z}))/(2*d);
+ const gz=(h({x:p.x,z:p.z+d})-h({x:p.x,z:p.z-d}))/(2*d);
+ for(const f of result){f.depth3D=true;for(const v of f.v){v.x=p.x+(v.x-p.x)*.6;v.z=p.z+(v.z-p.z)*.6;v.y+=base+gx*(v.x-p.x)+gz*(v.z-p.z);}}
+ }return result;}
 // Read-only decoded frame access for the independent settings preview.
 function previewFrame(index){const i=((Math.floor(index)%frames.length)+frames.length)%frames.length;return valid(frames[i])?frames[i]:valid(original)?original:null;}
 root.NicoGuide=Object.freeze({version:'1.1',defaults,avoidance,hornRange,requestYield,create,update,frameCount:frames.length,waveSpeedRange,getWaveSpeed,setWaveSpeed,imageAt,previewFrame,place,clearance,sprite,draw,groundFaces,ready:()=>frames.every(valid)});

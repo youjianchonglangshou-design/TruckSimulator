@@ -42,11 +42,11 @@ function ensureFacadeLOD(now){
  const moved=Math.hypot(svc.s.x-svc.facadeOrigin.x,svc.s.z-svc.facadeOrigin.z);
  // Quality switches rebuild once; while driving, re-evaluate near vs distant
  // walls every 50 m, at most once per 3 seconds (no physical-stage changes).
- if(tier!==svc.facadeTier||svc.facadeBuiltLevel!==svc.level||(tier!=='ultra'&&moved>=50&&now-svc.lastFacadeRebuild>=3000)){
+ if(tier!==svc.facadeTier||svc.facadeBuiltLevel!==svc.level||((tier!=='ultra'||svc.P.levels[svc.level].scene?.selectStart)&&moved>=50&&now-svc.lastFacadeRebuild>=3000)){
   svc.lastFacadeRebuild=now;buildYard();
  }
 }
-function buildYardBase(){svc.sceneryStats=null;svc.sceneryBuilder=globalThis.StreetAssets?.create({flat:svc.flat,box:svc.box,face:svc.face,textureFace:svc.textureFace,facadeTier:svc.facadeTier,observer:svc.P.start(svc.level),batch:true});if(svc.P.levels[svc.level].scene){svc.staticFaces=[];svc.faces=svc.staticFaces;svc.P.levels[svc.level].scene.render({flat:svc.flat,box:svc.box,localBox:svc.localBox,containerBody:svc.containerBody,street:svc.sceneryBuilder});return;}if(svc.level<3){buildOriginalYard();return;}svc.staticFaces=[];svc.faces=svc.staticFaces;const q=svc.P.levels[svc.level],g=svc.P.goal(svc.level),a=q.heading;
+function buildYardBase(){svc.sceneryStats=null;svc.sceneryBuilder=globalThis.StreetAssets?.create({flat:svc.flat,box:svc.box,face:svc.face,textureFace:svc.textureFace,facadeTier:svc.facadeTier,observer:svc.P.start(svc.level),batch:true});if(svc.P.levels[svc.level].scene){svc.staticFaces=[];svc.faces=svc.staticFaces;svc.P.levels[svc.level].scene.render({flat:svc.flat,box:svc.box,localBox:svc.localBox,containerBody:svc.containerBody,street:svc.sceneryBuilder,face:svc.face,textureFace:svc.textureFace,observer:{...svc.facadeOrigin,tier:svc.facadeTier}});return;}if(svc.level<3){buildOriginalYard();return;}svc.staticFaces=[];svc.faces=svc.staticFaces;const q=svc.P.levels[svc.level],g=svc.P.goal(svc.level),a=q.heading;
 const ground=q.theme==='construction'?'#796b50':'#505c60';svc.flat(0,3,68,76,ground,0,0);
 const F=(x,z,w,l,c,y=.014)=>{let p=svc.P.local(svc.level,x,z);svc.flat(p.x,p.z,w,l,c,a,y)};
 const B=(x,z,w,l,h,y,c,edge=false)=>{let p=svc.P.local(svc.level,x,z);svc.box(p.x,p.z,w,l,h,y,c,a,edge)};

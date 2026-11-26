@@ -14,7 +14,7 @@ function guidanceTurns(n,state){
  return list;
 }
 function guidanceGoal(n){
- if(svc.P.levels[n].theme==='practice')return null;
+ if(svc.P.levels[n].theme==='practice'||svc.P.levels[n].scene?.driveThrough)return null;
  const g=svc.P.goal(n);
  // Match the actual paint: the original tutorial and NS5 use slightly different visual extents.
  if(n<3)return {...g,z:-34.95,w:3.34,l:14};

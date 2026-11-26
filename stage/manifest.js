@@ -4,7 +4,7 @@
  * Order here defines menu order. IDs must be unique.
  */
 (function(root){'use strict';
-const files=Object.freeze(['ns2.js','ns5.js','dc3.js']);
+const files=Object.freeze(['ns2.js','ns5.js','dc3.js','jiuqudong.js']);
 const factories=new Map(),errors=[];
 root.TruckRealScenes={version:'3.9',files,errors,
  register(slug,factory){if(typeof factory!=='function'||factories.has(slug))throw Error('Duplicate or invalid stage: '+slug);factories.set(slug,factory);},

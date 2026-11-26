@@ -18,7 +18,7 @@
   function mirrorCaptureRect(side,wide){const base=getRect(side,wide),aspect=wide?(0.36/0.31):(0.39/0.68);return {x:0,y:0,w:base.w,h:Math.max(16,Math.round(base.w/aspect))};}
   function invalidate(){const {level,sceneRevision}=getFrame();for(const item of slots){const cv=item.canvas;if(cv.width>0&&cv.height>0){const c=cv.getContext('2d');c.save();c.setTransform(1,0,0,1,0,0);c.globalAlpha=1;c.globalCompositeOperation='copy';c.fillStyle='#16252b';c.fillRect(0,0,cv.width,cv.height);c.restore();}item.key='';item.pose='';item.captureAt=0;item.stage=level;item.sceneRevision=sceneRevision;item.camera=null;item.frame=++frame;item.valid=false;}}
   function capture(objects,all,paint=true,force=false){
-   const {vehicle:s,level,sceneRevision,view,difficultyMode,active3d,dpr,qualityRevision,visuals:q,fps,environment:env}=getFrame();if(difficultyMode===2)return;
+   const {vehicle:s,level,sceneRevision,view,difficultyMode,active3d,dpr,qualityRevision,trafficPose,visuals:q,fps,environment:env}=getFrame();if(difficultyMode===2)return;
    const currentFrame=frame++,stride=q.mirrorStride,measuredFps=fps||30,adaptiveStride=measuredFps>0&&measuredFps<22?Math.max(2,stride):stride;
    for(const side of [-1,1])for(const wide of [false,true]){
     const i=(side===-1?0:2)+(wide?1:0),item=slots[i],r=active3d?mirrorCaptureRect(side,wide):getRect(side,wide),{w,h}=r;
@@ -26,7 +26,7 @@
     const adj=angles[(side===-1?'left':'right')+(wide?'Wide':'')];
     const key=[sceneRevision,qualityRevision,level,view,w,h,adj.yaw,adj.pitch].join('|');
     const stale=item.key!==key||item.canvas.width!==px||item.canvas.height!==py;
-    const pose=[Math.round(s.x*20),Math.round(s.z*20),Math.round(s.a*300),Math.round(s.b*300),env?.time,env?.weather,Math.round((env?.brightness||1)*20)].join('|');
+    const pose=[Math.round(s.x*20),Math.round(s.z*20),Math.round(s.a*300),Math.round(s.b*300),env?.time,env?.weather,Math.round((env?.brightness||1)*20),trafficPose||''].join('|');
     const movingFrame=item.pose!==pose,weatherDue=env?.weather==='rain'&&clock()-(item.captureAt||0)>580;
     if(force&&!stale)continue;
     if(stale||((movingFrame||weatherDue)&&currentFrame%adaptiveStride===i%adaptiveStride)){

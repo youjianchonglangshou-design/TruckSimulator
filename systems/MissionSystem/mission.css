@@ -11,3 +11,8 @@
 #cabModal .mission-pair{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px}
 #cabModal .mission-pair div{display:grid;gap:4px}#cabModal .mission-pair small,#cabModal .mission-note{color:#b1cbd1;font-size:12px;margin:0}#cabModal .mission-pair strong{font-size:13px;overflow-wrap:anywhere}#cabModal .mission-arrow{color:#88ded3}
 #cabModal .mission-preview svg{display:block;width:100%;max-height:110px}#cabModal .mission-stars{font-size:23px;color:#ffd268;letter-spacing:1px;font-weight:bold}#cabModal button.mission-start{background:#126e66;border:1px solid #75e6cc;min-height:38px;color:#e9f7fa;border-radius:6px;text-align:center;font-weight:700}
+
+/* The mountain mission has no separate heading choice; keep both routes and Start visible. */
+#cabModal .mountain-mission .mission-preview svg{max-height:88px}
+#cabModal .mountain-mission .mission-summary{gap:5px}
+@media(min-height:700px){#cabModal .cab-dialog:has(.mountain-mission){max-height:96vh}}

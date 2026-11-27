@@ -38,6 +38,8 @@ function create(P,worldScene,random=Math.random){
  for(let i=0;i<baseGroups;i++){const pair=pairs>0&&(pairs===baseGroups-i||random()<pairs/(baseGroups-i));const c=choose(12,pair,false)||choose(12,pair,true);if(!c)break;add(c,pair?2:1,false);if(pair)pairs--;}
  function sort(){groups.sort((a,b)=>a.target-b.target);plans.sort((a,b)=>a.target-b.target);}
  sort();
+ const Heavy=typeof module==='object'&&module.exports?require('./jqd-trucks.js'):globalThis.JQDTrucks;
+ const heavy=Heavy.create(P,worldScene,scene,reverse,random);
  const locate=scene.locate;
  function pose(c,d){const p=scene.positionAt(d,lane);return {...c,...p,d,a:scene.routeAt(d).a+Math.PI};}
  function intrusion(s,threshold=.06){return [P.tractor(s),P.trailer(s)].some(b=>P.corners(b).some(p=>locate(p).r<threshold));}
@@ -54,17 +56,19 @@ function create(P,worldScene,random=Math.random){
  }
  function tick(prev,next,dt,started){if(crashed)return {hit:false,horn:false};clock+=dt;const d=locate(next).s;
   adapt(next,d,started);
+  const truckEvent=heavy.tick(prev,next,dt,started,active);if(truckEvent.hit){crashed=true;return {hit:true,horn:false,truckHit:true};}
+  const truckBlocks=heavy.blocks();
   for(const g of groups){if(g.used)continue;if(d>g.target+25){g.used=true;for(const p of g.members)p.used=true;continue;}if(!started||d<g.target-(g.adaptive?72:48))continue;
    const gap=Math.max(0,g.target-d),lead=clamp(gap*g.speed/Math.max(3.0,Math.abs(next.v)),24,65),spacing=g.members[g.members.length-1].spacing;
-   const ahead=active.filter(c=>c.d>d-20);const safeLead=ahead.length?Math.max(...ahead.map(c=>c.d))+18:-Infinity;
+   const ahead=active.filter(c=>c.d>d-20);const safeLead=Math.max(ahead.length?Math.max(...ahead.map(c=>c.d))+18:-Infinity,...truckBlocks.filter(b=>b.rear>d-20).map(b=>b.rear+10));
    const first=Math.min(length+24-spacing,Math.max(d+(g.adaptive?95:18),g.target+lead,safeLead));if(first<safeLead||first<d+(g.adaptive?95:18))continue;
    g.used=true;for(const p of g.members){p.used=true;active.push(pose({...p,lastHorn:-Infinity,spawnAt:first+p.spacing},first+p.spacing));}
   }
   let horn=false,hit=false;const bodies=[P.tractor(next),P.trailer(next)],oldBodies=[P.tractor(prev),P.trailer(prev)];
   active.sort((a,b)=>a.d-b.d);
-  for(let i=0;i<active.length;i++){const c=active[i],prior=active[i-1],nextD=Math.max(c.d-c.speed*dt,prior?prior.d+(prior.l+c.l)/2+8:-Infinity),n=pose(c,nextD);if(Math.abs(n.d-d)<24&&(bodies.some(b=>P.overlap(b,n))||oldBodies.some(b=>P.overlap(b,n))||bodies.some(b=>P.overlap(b,c)))){hit=true;crashed=true;break;}
+  for(let i=0;i<active.length;i++){const c=active[i],prior=active[i-1],nextD=Math.min(c.d,Math.max(c.d-c.speed*dt,prior?prior.d+(prior.l+c.l)/2+8:-Infinity,...truckBlocks.filter(b=>b.d<c.d).map(b=>b.rear+c.l/2+3))),n=pose(c,nextD);if(Math.abs(n.d-d)<24&&(bodies.some(b=>P.overlap(b,n))||oldBodies.some(b=>P.overlap(b,n))||bodies.some(b=>P.overlap(b,c)))){hit=true;crashed=true;break;}
    active[i]=n;if(n.d-d>=-4&&n.d-d<=38&&clock-n.lastHorn>2.1&&intrusion(next)){n.lastHorn=clock;horn=true;}}
-  active=active.filter(c=>c.d>=-24&&c.d>d-90);return {hit,horn};
+  active=active.filter(c=>c.d>=-24&&c.d>d-90);return {hit,horn,truckHorn:truckEvent.horn};
  }
  function model(c){const out=[],w=c.w,l=c.l,h=c.h,grade=(scene.routeAt(c.d+1).y-scene.routeAt(c.d-1).y)/2;
   const pt=(r,y,f)=>{const p=P.at(c.x,c.z,c.a,f,r);return {...p,y:c.y+y-grade*f};};
@@ -85,7 +89,7 @@ function create(P,worldScene,random=Math.random){
     const wheel=(a,x,rr=R)=>[x,ys+Math.cos(a)*rr,f+Math.sin(a)*rr];const n=8,cap=[];for(let i=0;i<n;i++){const a=i*Math.PI*2/n,b=(i+1)*Math.PI*2/n;cap.push(wheel(a,outer));face([wheel(a,outer),wheel(b,outer),wheel(b,inner),wheel(a,inner)],'#212527');}face(cap,'#282d30');face(Array.from({length:8},(_,i)=>wheel(i*Math.PI/4,outer+side*.003,.17)),'#a7adb0');}
   return out;
  }
- return Object.freeze({tick,riskState:()=>({risk,adaptiveCount,occupiedDistance,tier,target:quota[tier],quota:[...quota],reverse}),plan:()=>plans.map(p=>({...p})),cars:()=>active.map(c=>({...c})),mirrorStamp:()=>active.map(c=>`${c.zone}:${Math.round(c.d*5)}`).join(','),faces:()=>active.flatMap(model)});
+ return Object.freeze({tick,riskState:()=>({risk,adaptiveCount,occupiedDistance,tier,target:quota[tier],quota:[...quota],reverse}),plan:()=>plans.map(p=>({...p})),truckPlan:heavy.plan,trucks:heavy.trucks,cars:()=>active.map(c=>({...c})),mirrorStamp:()=>active.map(c=>`${c.zone}:${Math.round(c.d*5)}`).join(',')+'|'+heavy.mirrorStamp(),faces:()=>active.flatMap(model).concat(heavy.faces())});
 }
 function horn(audio){if(!audio||audio.state!=='running')return false;try{const t=audio.currentTime;for(const f of [370,493]){const o=audio.createOscillator(),g=audio.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.085,t+.035);g.gain.setValueAtTime(.085,t+.24);g.gain.linearRampToValueAtTime(0,t+.30);g.gain.linearRampToValueAtTime(.075,t+.39);g.gain.setValueAtTime(.075,t+.54);g.gain.linearRampToValueAtTime(0,t+.63);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+.65);o.onended=()=>{o.disconnect();g.disconnect();};}return true;}catch{return false;}}
 return Object.freeze({create,horn,travelScene,LIMITS});

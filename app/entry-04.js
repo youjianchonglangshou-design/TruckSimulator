@@ -13,6 +13,7 @@
   ['TruckInteractionCalibration','cabin/interaction-calibration.js']
  ];
  const sources=[
+  'cabin/vendor/three.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js',
   'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js',
   'https://unpkg.com/three@0.152.2/build/three.min.js'
@@ -48,6 +49,7 @@
   }
   if(missing.length)throw Error('本機車艙模組未載入：'+missing.join('；'));
  }
+ document.getElementById('cabUse2D').addEventListener('click',()=>window.TruckVehicleFallbackLevels.install());
  async function start(){try{
   // Mobile launch must precede the first-frame watchdog and GPU initialization.
   await MobileLandscape.whenStarted();
@@ -62,7 +64,7 @@
    }
   }
   if(window.TruckCabinStartup?.isCancelled?.())return;
-  if(!window.THREE?.WebGLRenderer)throw Error('Three.js CDN 均無法載入；請確認 Chrome 能連線 cdnjs/jsdelivr/unpkg，或改用原本的本機 BAT 伺服器');
+  if(!window.THREE?.WebGLRenderer)throw Error('本機 Three.js 與 CDN 均無法載入；請確認 Chrome 能連線 cdnjs/jsdelivr/unpkg，或改用原本的本機 BAT 伺服器');
   // RC29: evaluate the packaged Three.js integration after THREE is available.
   // The original file is still shipped for maintenance; file:// does not need to fetch it.
   const source=document.getElementById('truck-cabin-integration-source')?.textContent;

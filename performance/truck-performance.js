@@ -150,5 +150,5 @@
  }
  // Do not install the generic Canvas2D adapter: this game's custom canvas and
  // forced-landscape coordinate system already own resize and ctx.setTransform().
- root.TruckPerformance=Object.freeze({kit,resolution,onRender,mount,setMode,setFpsThreshold,get fpsThreshold(){return fpsThreshold;},get visuals(){return visuals;},get revision(){return revision;},get isOpen(){return !!ui&&!ui.overlay.hidden;},attachResize(fn){resizeFn=fn;kit?.setResizeHandler(fn);kit?.commitPendingResize({isPlaying:false});},bindPause(fn){inputPause=fn;},refreshUI,qualityStatus,mountCabinHud,setCabinHudActive,setHudEnabled,get hudEnabled(){return hudEnabled;}});
+ root.TruckPerformance=Object.freeze({kit,resolution,onRender,mount,visualProfile:t=>({...looks[t]||looks.balanced}),setMode,setFpsThreshold,get fpsThreshold(){return fpsThreshold;},get visuals(){return visuals;},get revision(){return revision;},get isOpen(){return !!ui&&!ui.overlay.hidden;},attachResize(fn){resizeFn=fn;kit?.setResizeHandler(fn);kit?.commitPendingResize({isPlaying:false});},bindPause(fn){inputPause=fn;},refreshUI,qualityStatus,mountCabinHud,setCabinHudActive,setHudEnabled,get hudEnabled(){return hudEnabled;}});
 })(globalThis);

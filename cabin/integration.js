@@ -1,4 +1,4 @@
-/* TruckSimulator v6.0.0-alpha.REBUILD-DEV.16-RC16 — real-game bridge into user-approved RC15 Three.js shell.
+/* TruckSimulator v6.0.0-alpha.REBUILD-DEV.17-P09-RC12 — real-game bridge into user-approved RC15 Three.js shell.
    No duplicate physics, stages, weather, music player, or quality controller. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id), b=window.TruckCabinBridge, M=window.TruckCabinRebuild, U=window.TruckCabinUserLayout;
@@ -17,17 +17,38 @@ if(!b||!M||!brakeAdjustment||!displayCal||!interactionCal||!window.TruckCabinMou
 const T=window.THREE;
 const registry=TruckDeviceRegistry.createRegistry(e=>console.error("Device failure",e));
 const {normalizeMirrorUV}=TruckRenderGeometry;
-let renderer,scene,camera,shell,mounts,paint,alive=true,frame=0,mirrorCursor=0,last=0,lastHud=0,last3d=0,worldW=0,worldH=0;
+let cssText,renderer,scene,camera,shell,mounts,paint,alive=true,frame=0,mirrorCursor=0,last=0,lastHud=0,last3d=0,worldW=0,worldH=0;
 let appliedPixelRatio=0,contextLossCount=0,contextLost=false,contextRestoreDeadline=null,contextScale=1;
 const quality={ultra:1.5,high:1.5,balanced:1.5,safe:1.5,emergency:1.5};
 let paintingDirty=true;
-let mirrorCabin=null,radarCabin=null;
+let mirrorCabin=null,radarCabin=null,car=null,carKey='',carPublisher=null,carButtons=[],carGearDrag=null,carPaint=null,carPaintRevision=-1,carMirrorMaterial=null;
+const isCar=()=>b.vehicles.activeId()!=='truck';
+function vehiclePaint(){if(!carPaint)carPaint=TruckVehiclePaint.create(b.vehicles.storageFor('NissanMarch_K13'));return {get:()=>({shell:carPaint.get()||'#e9e9e4'}),set:(k,v)=>carPaint.set(v),save:()=>true,reset:()=>carPaint.reset()};}
+function currentPaint(){return isCar()?vehiclePaint():paint;}
+function releaseCar(){if(!car)return;TruckV6TransmissionCabinInstance().cancelDrag();carPublisher?.unmount();carPublisher=null;if(physicalPressed?.button?.vehicleMesh){cancelPhysicalLongPress();physicalPressed=null;}if(physicalHover?.vehicleMesh)physicalHover=null;if(carMirrorMaterial){const {face,original}=carMirrorMaterial;face.material.dispose();face.material=original;carMirrorMaterial=null;}scene.remove(car.root);car.dispose();car=null;carKey='';carButtons=[];carGearDrag=null;}
+function ensureCar(s){const provider=TruckVehicleCabins.get(s.vehicleId),p=K13ApprovedLayout.settings,key=s.vehicleId+':'+K13Native.eyePose(p,s.probe).outside;
+ if(car&&key===carKey)return;
+ if(!car)mirrorCabin.unmount();else releaseCar();
+ car=provider.buildModel({inside:true,look:s.probe});carKey=key;carPaintRevision=-1;scene.add(car.root);
+ const m=car.native.mounts,center=car.root.getObjectByName('k13-center-mirror').getObjectByName('mirror-live-reflection-surface');carMirrorMaterial={face:center,original:center.material};center.material=center.material.clone();
+ const mirrorFaces=new Map([['mirror-left-upper',m.mirrorFaces.get('mirror-left-upper')],['mirror-right-upper',m.mirrorFaces.get('mirror-right-upper')],['mirror-center',center]]);
+ const normalize=geo=>{normalizeMirrorUV(geo);const uv=geo.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,1-v,u)}uv.needsUpdate=true;return geo};
+ carPublisher=TruckMirrorCabin.createMirrorCabin({T,mounts:{mirrorFaces},b,position,add,btn,action,makeButton:(host,id,title,fn)=>{const el=add(host,'button',id,title,'cab-physical');on(el,fn);return el},dragHints:window.TruckMirrorDragHints,normalizeMirrorUV:normalize});carPublisher.mount();carPublisher.mountControls(host);
+ const labels={head:'燈光',horn:'喇叭',wiper:'雨刷',settings:'設定',levels:'選關',exit:'下車',mode:'駕駛模式',restart:'重來',music:'YouTube',radar:'雷達',brake:'手剎車',gear:'排檔','gear-cycle':'排檔'};
+ carButtons=(car.native.root.userData.equipmentHits||[]).map(mesh=>{const a=mesh.userData.k13Action;return {mesh,vehicleMesh:true,label:labels[a]||a,kind:({head:'lowbeam',brake:'parking',music:'youtube'})[a]||a,mode:['settings','levels','exit'].includes(a)?'door':'wheel',run:()=>{if(['settings','levels','mode'].includes(a))openModal(a);else if(a==='horn')horn();else if(a==='gear')action('gear',mesh.userData.k13Value);else if(a==='gear-cycle')action('gear',b.snapshot().gear===1?0:b.snapshot().gear===0?-1:1);else action(({head:'lights',exit:'view'})[a]||a)},longRun:a==='head'?()=>action('high'):null}});
+}
+function carFrame(s,ms){const previousCar=car;ensureCar(s);const p=TruckVehicleCabins.get(s.vehicleId).cameraPose(car.settings,s.probe,true);if(camera.fov!==p.fov){camera.fov=p.fov;camera.updateProjectionMatrix();}camera.position.set(...p.eye);camera.lookAt(...p.target);shell.visible=mounts.root.visible=false;car.root.visible=s.view===0;
+ vehiclePaint();if(carPaintRevision!==carPaint.revision()){TruckVehiclePaint.applyK13(car,carPaint.get(),TruckCabinPaint,true);carPaintRevision=carPaint.revision();}
+ const seconds=Math.floor(s.elapsed),time=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');K13LiveDisplay.update(car,{state:{v:s.speed/3.6,hits:s.hits,gear:s.gear,steer:s.steer,braking:s.hand},hand:s.hand,devices:{distance:s.difficultyMode===0,mirrors:s.difficultyMode!==2,radar:s.radarEnabled&&s.difficultyMode===0,environment:s.environment||{}},distance:s.distance,distanceLabel:s.driveThrough||s.mission?.mountain||s.mission?.route==='out'?'迄點距離':'後端距離',time,now:ms,radarRevision:TruckRadarSystem.revision(b.getRadar()),drawRadar:c=>{const src=b.getRadar();if(src?.width){const [w,h]=TruckTextTexture.size(c);TruckTextTexture.context(c).drawImage(src,0,0,w,h)}}});
+ if(car!==previousCar||ms-lastHud>=75){updateHud(s);lastHud=ms;}carPublisher.update(s);const webglStart=performance.now();renderCabin(car.root.visible);window.TruckRenderDiagnostics?.sample('webglMs',performance.now()-webglStart);updateAnchors(s);
+}
+
 let first3dFrame=false,stoppedFor2D=false;
 function stopFor2D(){
  if(stoppedFor2D)return;stoppedFor2D=true;alive=false;clearTimeout(contextRestoreDeadline);
  if(window.TruckCabinView){window.TruckCabinView.active=false;window.TruckCabinView.uiPaused=false;}
  if(ui.modal?.classList.contains('open'))closeModal();
- host.hidden=true;renderer?.dispose?.();
+ host.hidden=true;releaseCar();cssText?.dispose();TruckTextTexture.disableCapture();renderer?.dispose?.();
 }
 
 let displayCalibration=displayCal.load();
@@ -49,9 +70,11 @@ function add(parent,tag,id,contents='',klass=''){
 function action(name,arg){return b.action(name,arg)}
 function on(el,fn){el.addEventListener('click',e=>{e.stopPropagation();fn(e)})}
 function init3d(){
+ TruckTextTexture.enableCapture();
  renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'high-performance'});
+ cssText=TruckCSS3DText.create(T,canvas);
  canvas.addEventListener('webglcontextlost',e=>{
-  if(stoppedFor2D)return; e.preventDefault();contextLost=true;alive=false;contextLossCount++;
+  if(stoppedFor2D)return; e.preventDefault();contextLost=true;alive=false;cssText?.hide();contextLossCount++;
   // Browser-owned WebGL restoration is preferable to tearing down RC15 and
   // creating yet another GPU context. Reduce the resolution on recovery.
   contextScale=Math.max(.55,contextScale*.75);appliedPixelRatio=0;
@@ -61,7 +84,7 @@ function init3d(){
  canvas.addEventListener('webglcontextrestored',()=>{
   if(stoppedFor2D||!contextLost)return;clearTimeout(contextRestoreDeadline);contextLost=false;alive=true;
   worldW=0;worldH=0;appliedPixelRatio=0;last3d=0;
-  mirrorCabin?.restoreContext();
+  mirrorCabin?.restoreContext();carPublisher?.restoreContext();cssText?.restoreContext();
   for(const d of Object.values(displaySurfaces))if(d.texture)d.texture.needsUpdate=true;
   TruckV6WeatherCabinInstance().restoreContext();
   requestAnimationFrame(tick);
@@ -102,7 +125,8 @@ function init3d(){
  createDisplaySurface('radar','parking-monitor-BLANK',.632,.342,[0,.015,.108],768,432);
  radarCabin=TruckRadarCabin.createRadarCabin({surface:displaySurfaces.radar,getRadar:b.getRadar,action:(name)=>{if(name!=='radarOrientation')throw Error('invalid radar command');return b.action(name)},position,T,makeButton:host=>{const e=add(host,'button','cabRadarOrientation','','cab-radar-orientation');e.type='button';e.title='切換雷達方向（AUTO／車頭固定／地圖固定）';return e}});
  registry.register("radar",radarCabin);
- createDisplaySurface('youtube','youtube-logo-placeholder',.092,.068,[-.198,0,.066],512,384);
+ const ytHolder=local('youtube-logo-placeholder');ytHolder.geometry.computeBoundingBox();
+ createDisplaySurface('youtube','youtube-logo-placeholder',.079,.079,[0,0,Math.max(.014,ytHolder.geometry.boundingBox.max.z+.002)],256,256,ytHolder);
  drawYoutube();
  TruckV6MusicCabinInstance().createWaveSurface(T,local('youtube-audio-screen-BLANK').parent);
  registerMediaButtons();
@@ -115,10 +139,10 @@ function init3d(){
 function createDisplaySurface(id,target,w,h,origin,width,height,parentOverride){
  const parent=parentOverride||local(target)?.parent;
  if(!parent)throw Error('RC10 display mount not found: '+target);
- const c=document.createElement('canvas');c.width=width;c.height=height;
+ const hd=['speedGear','hitsTime','angle','distance','radar'].includes(id);
+ const c=hd?TruckTextTexture.canvas(width,height,true):document.createElement('canvas');if(!hd){c.width=width;c.height=height;}
  const tx=new T.CanvasTexture(c);tx.colorSpace=T.SRGBColorSpace;
- tx.minFilter=T.LinearFilter;tx.magFilter=T.LinearFilter;
- tx.anisotropy=renderer.capabilities?.getMaxAnisotropy?.()??1;
+ if(hd)TruckTextTexture.configure(T,tx,true);else if(id!=='youtube'){tx.minFilter=T.LinearFilter;tx.magFilter=T.LinearFilter;tx.anisotropy=renderer.capabilities?.getMaxAnisotropy?.()??1;}
  const material=new T.MeshBasicMaterial({map:tx,side:T.DoubleSide,toneMapped:false,transparent:true,depthWrite:false});
  const mesh=new T.Mesh(new T.PlaneGeometry(w,h),material);
  mesh.name='rc11-real-display-'+id;parent.add(mesh);
@@ -132,6 +156,7 @@ function applyDisplayCalibration(id){
  d.mesh.position.set(base[0]+v.position.x,base[1]+v.position.y,base[2]+v.position.z);
  d.mesh.rotation.set(v.rotation.x*Math.PI/180,v.rotation.y*Math.PI/180,v.rotation.z*Math.PI/180,'XYZ');
  d.mesh.scale.set(v.scale.x,v.scale.y,1);
+ if(id==='youtube'){d.mesh.position.x+=.04;d.mesh.position.y-=.01;d.mesh.scale.set(v.scale.x/.95,v.scale.y/1.7,1);}
  d.mesh.updateMatrixWorld(true);
  if(id==='youtube'){const btn=physicalButtons.find(v=>v.kind==='youtube');if(btn)btn.normalZ=d.mesh.position.z}
 }
@@ -251,18 +276,14 @@ function drawPhysicalGlyph(ctx,kind){
  ctx.restore();
 }
 function drawPhysicalArtwork(button){
- const c=button.canvas,x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);
+ const c=button.canvas,x=TruckTextTexture.context(c),[w,h]=TruckTextTexture.size(c);x.clearRect(0,0,w,h);
  // A single oversized pictogram fills the native 3D key; readable text lives ONLY in the hover/hold tooltip.
  const isDoor=button.mode==='door';
  if(button.kind==='parking'){
-  x.fillStyle='#101010';x.strokeStyle='#101010';x.lineWidth=10;
-  x.beginPath();x.arc(116,c.height/2,78,0,Math.PI*2);x.stroke();
-  x.font='bold 118px Arial,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('P',116,c.height/2+6);
-  x.font='bold 145px "Microsoft JhengHei","Noto Sans CJK TC",sans-serif';x.fillText('手剎車',545,c.height/2+8);
-  if(!(globalThis.document?.body?.classList.contains('mobile-game')||!!globalThis.matchMedia?.('(pointer:coarse)')?.matches)){x.font='bold 125px Arial,sans-serif';x.fillText('B',930,c.height/2+7);}
+  TruckV6BrakeCabin.drawParkingArtwork(x,w,h);
   button.texture.needsUpdate=true;return;
  }
- x.save();x.translate(c.width / 2,c.height / 2);x.scale(isDoor ? 5.2 : 4.55,isDoor ? 4.0 : 4.0);
+ x.save();x.translate(w / 2,h / 2);x.scale(isDoor ? 5.2 : 4.55,isDoor ? 4.0 : 4.0);
  x.shadowColor='#244253';x.shadowBlur=2;
  drawPhysicalGlyph(x,button.kind);x.restore();
  button.texture.needsUpdate=true;
@@ -273,9 +294,9 @@ function createPhysicalButtons(){
   const mesh=local(def.name);if(!mesh?.geometry)throw Error('RC15 physical button missing: '+def.name);
   if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
   const box=mesh.geometry.boundingBox;
-  const canvas=document.createElement('canvas');canvas.width=def.mode==='brake'?1024:def.mode==='door'?1024:768;canvas.height=def.mode==='brake'?256:512;
+  const hd=def.mode==='brake';const canvas=hd?TruckTextTexture.canvas(1024,256):document.createElement('canvas');if(!hd){canvas.width=def.mode==='door'?1024:768;canvas.height=512;}
   const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;
-  texture.anisotropy=renderer.capabilities?.getMaxAnisotropy?.()??1;
+  if(hd)TruckTextTexture.configure(T,texture);else texture.anisotropy=renderer.capabilities?.getMaxAnisotropy?.()??1;
   const geometry=new T.PlaneGeometry((box.max.x-box.min.x)*.84,(box.max.y-box.min.y)*.86);
   const material=new T.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:T.DoubleSide,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-1});
   const decal=new T.Mesh(geometry,material);
@@ -324,6 +345,7 @@ function refreshPhysicalButtonLabels(s){
  if(current&&ui.tooltip&&!ui.tooltip.hidden){const next=interactionCal.label(current,s.environment);if(ui.tooltip.textContent!==next)ui.tooltip.textContent=next;}
 }
 function setPhysicalFeedback(button,level){
+ if(button?.vehicleMesh)return;
  if(!button)return;
  button.mesh.position.z=button.normalZ-(level===2?.006:0);
  if(button.material?.emissive){
@@ -358,12 +380,13 @@ function schedulePhysicalTooltipHide(delay=0){
 // geometry or change raycasting for other controls, even if the wiper fails.
 function wiperTarget(...args){return TruckV6WiperCabinInstance().wiperTarget(...args)}
 function pickPhysicalButton(e){
- if(!document.body.classList.contains('cabin3d-ready')||!mounts?.root.visible||(ui.modal?.classList.contains('open'))||b.snapshot().view!==0)return null;
+ if(!document.body.classList.contains('cabin3d-ready')||!(isCar()?car?.root.visible:mounts?.root.visible)||(ui.modal?.classList.contains('open'))||b.snapshot().view!==0)return null;
  const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return null;
  if(document.body.classList.contains('mobile-rotated')){const p=b.point(e);pointerNdc.set(2*p.x/canvas.clientWidth-1,1-2*p.y/canvas.clientHeight)}
  else pointerNdc.set(2*(e.clientX-rect.left)/rect.width-1,1-2*(e.clientY-rect.top)/rect.height);
  camera.updateMatrixWorld();mounts.root.updateWorldMatrix(true,true);
  raycaster.setFromCamera(pointerNdc,camera);
+ if(isCar()){const mesh=car&&K13LiveDisplay.pick(car,raycaster);return carButtons.find(x=>x.mesh===mesh)||null;}
  // RC35: original RC32 non-wiper raycast. Rain uses its own DOM target.
  const intersections=raycaster.intersectObjects(physicalButtons.filter(x=>x.kind!=='wiper').map(x=>x.mesh),false);
  return physicalButtons.find(x=>x.mesh===intersections[0]?.object)||null;
@@ -372,12 +395,13 @@ function pickPhysicalButton(e){
 // along the projected 3D gear-track axis, so perspective and screen size
 // do not affect selection (including mobile landscape).
 
-var TruckV6TransmissionCabinPrivate;function TruckV6TransmissionCabinInstance(){return TruckV6TransmissionCabinPrivate||(TruckV6TransmissionCabinPrivate=TruckV6TransmissionCabin.createTransmissionSystemCabin({get action(){return action},get b(){return b},get camera(){return camera},get canvas(){return canvas},get cl(){return cl},get hidePhysicalTooltip(){return hidePhysicalTooltip},get local(){return local},get mounts(){return mounts},get physicalHover(){return physicalHover},set physicalHover(value){physicalHover=value},get pointerNdc(){return pointerNdc},get raycaster(){return raycaster},get setPhysicalFeedback(){return setPhysicalFeedback},get T(){return T},get ui(){return ui},get worldH(){return worldH},get worldW(){return worldW}}));}
-function pickShifterKnob(...args){return TruckV6TransmissionCabinInstance().pickShifterKnob(...args)}
+var TruckV6TransmissionCabinPrivate;function TruckV6TransmissionCabinInstance(){return TruckV6TransmissionCabinPrivate||(TruckV6TransmissionCabinPrivate=TruckV6TransmissionCabin.createTransmissionSystemCabin({get action(){return action},get b(){return b},get camera(){return camera},get canvas(){return canvas},get cl(){return cl},get hidePhysicalTooltip(){return hidePhysicalTooltip},get local(){return local},get mounts(){return mounts},get dragRoot(){return isCar()?car?.root:mounts.root},get dragLocal(){return isCar()?n=>car?.root.getObjectByName(n):local},get dragTolerance(){return isCar()?5:0},get physicalHover(){return physicalHover},set physicalHover(value){physicalHover=value},get pointerNdc(){return pointerNdc},get raycaster(){return raycaster},get setPhysicalFeedback(){return setPhysicalFeedback},get T(){return T},get ui(){return ui},get worldH(){return worldH},get worldW(){return worldW}}));}
+function pickShifterKnob(e){return TruckV6TransmissionCabinInstance().pickShifterKnob(e)}
 function gearAxisInPixels(...args){return TruckV6TransmissionCabinInstance().gearAxisInPixels(...args)}
-function startShifterDrag(...args){return TruckV6TransmissionCabinInstance().startShifterDrag(...args)}
-function moveShifterDrag(...args){return TruckV6TransmissionCabinInstance().moveShifterDrag(...args)}
-function finishShifterDrag(...args){return TruckV6TransmissionCabinInstance().finishShifterDrag(...args)}
+function startShifterDrag(e){return TruckV6TransmissionCabinInstance().startShifterDrag(e)}
+function moveShifterDrag(e){return TruckV6TransmissionCabinInstance().moveShifterDrag(e)}
+function finishShifterDrag(e,cancel=false){return TruckV6TransmissionCabinInstance().finishShifterDrag(e,cancel)}
+function ownsGear(id){return TruckV6TransmissionCabinInstance().ownsPointer(id)}
 function initPhysicalPointerInput(){
  const surface=$('scene');
  const consume=e=>{e.preventDefault();e.stopImmediatePropagation()};
@@ -406,7 +430,7 @@ function initPhysicalPointerInput(){
  surface.addEventListener('pointerdown',e=>startPress(e),true);
  TruckV6WiperCabinInstance().surface().addEventListener('pointerdown',e=>startPress(e,true),true);
  window.addEventListener('pointermove',e=>{
-  if(TruckV6TransmissionCabinInstance().ownsPointer(e.pointerId)){moveShifterDrag(e);consume(e);return;}
+  if(ownsGear(e.pointerId)){moveShifterDrag(e);consume(e);return;}
   if(physicalPressed?.id===e.pointerId){
    if(Math.hypot(e.clientX-physicalPressed.x,e.clientY-physicalPressed.y)>14){
     physicalPressed.moved=true;cancelPhysicalLongPress();hidePhysicalTooltip();
@@ -422,13 +446,14 @@ function initPhysicalPointerInput(){
   if(hovered)showPhysicalTooltip(hovered,e);else hidePhysicalTooltip();
  },true);
  window.addEventListener('pointerup',e=>{
-  if(TruckV6TransmissionCabinInstance().ownsPointer(e.pointerId)){finishShifterDrag(e);consume(e);return;}
+  if(ownsGear(e.pointerId)){finishShifterDrag(e);consume(e);return;}
   if(!physicalPressed||physicalPressed.id!==e.pointerId)return;
   const p=physicalPressed;
-  const wasLongPress=p.longPress||(p.pointerType==='touch'&&performance.now()-p.start>=PHYSICAL_LONG_PRESS_MS);
+  const wasLongPress=(p.button.longRun&&performance.now()-p.start>=PHYSICAL_LONG_PRESS_MS)||p.longPress||(p.pointerType==='touch'&&performance.now()-p.start>=PHYSICAL_LONG_PRESS_MS);
   const valid=!p.moved&&Math.hypot(e.clientX-p.x,e.clientY-p.y)<=18&&(p.nativeWiper?document.elementFromPoint(e.clientX,e.clientY)===TruckV6WiperCabinInstance().surface()&&wiperTarget({target:TruckV6WiperCabinInstance().surface()})===p.button:pickPhysicalButton(e)===p.button);
   resetPress();consume(e);
   if(wasLongPress){
+   if(valid&&p.button.longRun)p.button.longRun();
    if(p.pointerType==='touch'&&valid)showPhysicalTooltip(p.button,e);
    schedulePhysicalTooltipHide(900);
   }else{
@@ -441,7 +466,7 @@ function initPhysicalPointerInput(){
   }
  },true);
  window.addEventListener('pointercancel',e=>{
-  if(TruckV6TransmissionCabinInstance().ownsPointer(e.pointerId)){finishShifterDrag(e,true);consume(e);return;}
+  if(ownsGear(e.pointerId)){finishShifterDrag(e,true);consume(e);return;}
   if(physicalPressed?.id!==e.pointerId)return;
   resetPress();hidePhysicalTooltip();consume(e);
  },true);
@@ -450,7 +475,7 @@ function initPhysicalPointerInput(){
  TruckV6WiperCabinInstance().surface().addEventListener('contextmenu',e=>{if(wiperTarget(e))consume(e)},true);
  surface.addEventListener('contextmenu',e=>{if(pickPhysicalButton(e))consume(e)},true);
  window.addEventListener('blur',()=>{
-  resetPress();TruckV6TransmissionCabinInstance().cancelDrag();setPhysicalFeedback(physicalHover,0);physicalHover=null;hidePhysicalTooltip();surface.style.cursor='';
+  resetPress();carGearDrag=null;TruckV6TransmissionCabinInstance().cancelDrag();setPhysicalFeedback(physicalHover,0);physicalHover=null;hidePhysicalTooltip();surface.style.cursor='';
  });
 }
 
@@ -480,7 +505,7 @@ function initUi(){
  ui.weatherText=ui.weather.querySelector('span');
  ui.danger=add(host,'div','cabDanger','');ui.danger.hidden=true;
  ui.help=add(host,'button','cabHelp','?','cab-control');on(ui.help,()=>openModal('help'));
- add(host,'span','cabBrand','TERMINAL DRIVER · v6.0.0-alpha.REBUILD-DEV.16-RC16');
+ add(host,'span','cabBrand','TERMINAL DRIVER · v6.0.0-alpha.REBUILD-DEV.17-P09-RC12');
  const make=(id,title,func,cls='')=>{const btn=add(host,'button',id,title,'cab-physical '+cls);btn.title=title;btn.setAttribute('aria-label',title);on(btn,func);return btn};
  ui.returnCab=add(host,'button','cabReturn','上車','cab-control');on(ui.returnCab,()=>action('view'));
  // The seven physical door/wheel switches are Three.js meshes, not HTML buttons.
@@ -503,7 +528,7 @@ function initUi(){
  ui.modalBody=add(card,'div',null,'','cab-dialog-body');
  ui.modal.addEventListener('pointerdown',e=>{if(e.target===ui.modal)closeModal()});
  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.modal.classList.contains('open'))closeModal()});
- if(window.TruckMobileCabin)window.TruckMobileCabin.install({host,b,surface:$('scene'),wiper:TruckV6WiperCabinInstance().surface(),pick:pickPhysicalButton,wiperTarget,startShifterDrag,moveShifterDrag,finishShifterDrag,ownsGear:id=>TruckV6TransmissionCabinInstance().ownsPointer(id),cancelGear:()=>TruckV6TransmissionCabinInstance().cancelDrag(),lookAllowed:()=>b.lookAllowed(),cl});else initPhysicalPointerInput();
+ if(window.TruckMobileCabin)window.TruckMobileCabin.install({host,b,surface:$('scene'),wiper:TruckV6WiperCabinInstance().surface(),pick:pickPhysicalButton,wiperTarget,startShifterDrag,moveShifterDrag,finishShifterDrag,ownsGear,cancelGear:()=>{carGearDrag=null;TruckV6TransmissionCabinInstance().cancelDrag()},lookAllowed:()=>b.lookAllowed(),cl});else initPhysicalPointerInput();
  // Three.js viewport has pointer-events:none; front-world drags only turn the head when safe.
  if(!window.TruckMobileCabin){let drag=null;$('scene').addEventListener('pointerdown',e=>{
   if(!b.lookAllowed()||!document.body.classList.contains('cabin3d-ready')||e.target!==$('scene'))return;
@@ -518,7 +543,7 @@ function row(parent){return add(parent,'div',null,'','cab-row')}
 function btn(parent,title,fn){const e=add(parent,'button',null,title);on(e,fn);return e}
 function sub(parent,title){add(parent,'h4',null,title)}
 
-var TruckV6SettingsCabinPrivate;function TruckV6SettingsCabinInstance(){return TruckV6SettingsCabinPrivate||(TruckV6SettingsCabinPrivate=TruckV6SettingsCabin.createSettingsSystemCabin({get action(){return action},get add(){return add},get b(){return b},get btn(){return btn},get mirrorCabin(){return mirrorCabin},get paint(){return paint},get row(){return row},get sub(){return sub},get ui(){return ui}}));}
+var TruckV6SettingsCabinPrivate;function TruckV6SettingsCabinInstance(){return TruckV6SettingsCabinPrivate||(TruckV6SettingsCabinPrivate=TruckV6SettingsCabin.createSettingsSystemCabin({get action(){return action},get add(){return add},get b(){return b},get btn(){return btn},get mirrorCabin(){return mirrorCabin},get paint(){return currentPaint()},get row(){return row},get sub(){return sub},get ui(){return ui}}));}
 function closeModal(...args){return TruckV6SettingsCabinInstance().closeModal(...args)}
 function optionSelect(...args){return TruckV6SettingsCabinInstance().optionSelect(...args)}
 function renderSettings(...args){return TruckV6SettingsCabinInstance().renderSettings(...args)}
@@ -557,7 +582,7 @@ const mobileProjectedBounds=mesh=>{if(!mesh?.geometry)return null;mesh.updateWor
 function updateAnchors(s){
  const active=s.view===0;
 
- updateWiperHitPreview(s);
+ if(isCar())TruckV6WiperCabinInstance().surface().style.display='none';else updateWiperHitPreview(s);
  window.TruckPerformance?.setCabinHudActive?.(active);
  if(!active||ui.modal?.classList.contains('open')){setPhysicalFeedback(physicalHover,0);physicalHover=null;hidePhysicalTooltip()}
  document.body.classList.toggle('cab-inspecting',s.view===3);
@@ -571,6 +596,7 @@ function updateAnchors(s){
  ui.returnCab.style.display=s.view===3?'block':'none';
  ui.angleSlider.disabled=!active||!b.lookAllowed();
  ui.angleSlider.setAttribute('aria-disabled',String(ui.angleSlider.disabled));
+ if(isCar()){carPublisher?.updateAnchors(s);ui.weather.style.display='none';const orientation=$('cabRadarOrientation');if(orientation)orientation.style.display='none';if(window.TruckMobileCabin)window.TruckMobileCabin.anchors(s,carButtons.map(button=>({...button,visible:active&&Math.abs(s.probe)<1&&(button.kind!=='radar'||s.difficultyMode===0),bounds:()=>mobileProjectedBounds(button.mesh)})),mobileProjectedBounds(car?.root.getObjectByName('shifter-knob')));return;}
  refreshPhysicalButtonLabels(s);
  registry.invoke("mirror","updateAnchors",s);registry.invoke("radar","anchor",s);
  {const p=new T.Vector3(1.52,1.30,-1.37);position(ui.weather,{visible:true,getWorldPosition(v){return v.copy(p)}})}
@@ -598,8 +624,9 @@ function updateHud(s){updateCoach(s);ui.angleSlider.value=String(Math.round(s.pr
  ui.missionTitle.textContent=s.missionTitle;ui.missionText.textContent=s.missionText;
  ui.danger.hidden=!Number.isFinite(s.nearGap)||s.nearGap>1.2;
  if(!ui.danger.hidden)ui.danger.textContent=`障礙物接近 ${s.nearGap.toFixed(2)} m`;
- updateWeather(s);updatePillar(s);drawInstrument(s);registry.invoke("radar","update",s);
+ if(!isCar()){updateWeather(s);updatePillar(s);drawInstrument(s);registry.invoke("radar","update",s);}
 }
+function renderCabin(visible){cssText.prepare(scene,camera,visible,worldW,worldH);try{if(visible)renderer.render(scene,camera);else renderer.clear();}finally{cssText.finish();}}
 function resize(){const w=document.body.clientWidth||innerWidth,h=document.body.clientHeight||innerHeight;
  const qualityId=b.snapshot().quality;
  const pixelRatio=Math.max(.5,Math.min(window.devicePixelRatio||1,quality[qualityId]??1)*contextScale);
@@ -608,9 +635,11 @@ function resize(){const w=document.body.clientWidth||innerWidth,h=document.body.
  renderer.setPixelRatio(pixelRatio);renderer.setSize(w,h,false);
  if(sizeChanged){camera.aspect=w/h;camera.updateProjectionMatrix();}
 }
-function tick(ms){if(window.TruckCabinStartup?.isCancelled?.()){stopFor2D();return;}if(!alive)return;requestAnimationFrame(tick);if(ms-last3d<29)return;last3d=ms;
+function tick(ms){if(window.TruckCabinStartup?.isCancelled?.()){stopFor2D();return;}if(!alive)return;requestAnimationFrame(tick);if(window.TruckVehicleCabins?.isOpen()||ms-last3d<29)return;last3d=ms;
  try{
  const s=b.snapshot();resize();frame++;
+ if(s.vehicleId!=='truck'){carFrame(s,ms);return;}
+ if(car){releaseCar();mirrorCabin.mount();mirrorCabin.mountControls(host);camera.fov=params.camera.fov;camera.updateProjectionMatrix();}
  // The RC15 camera, shell and model geometry are unchanged at all view angles.
  const pose=M.eyePose(s.probe,params.camera.position,params);
  camera.position.set(pose.x,pose.y,pose.z);camera.rotation.set(params.camera.pitch,pose.yaw,0,'YXZ');
@@ -626,7 +655,7 @@ function tick(ms){if(window.TruckCabinStartup?.isCancelled?.()){stopFor2D();retu
  TruckV6WeatherCabinInstance().rotate(ms);
  TruckV6MusicCabinInstance().updateYoutubeWave(ms);
   if(window.TruckMobileCabin&&visible&&Math.abs(s.probe)<1){camera.updateMatrixWorld();window.TruckMobileCabin.fitRadar(ui.radarGroup,()=>mobileProjectedBounds(physicalButtons.find(x=>x.kind==='radar')?.mesh),worldW,worldH);}
-  const __webglStart=performance.now();if(visible)renderer.render(scene,camera);else renderer.clear();window.TruckRenderDiagnostics?.sample('webglMs',performance.now()-__webglStart);
+  const __webglStart=performance.now();renderCabin(visible);window.TruckRenderDiagnostics?.sample('webglMs',performance.now()-__webglStart);
  updateAnchors(s);
  if(!first3dFrame && window.__truck2DFrameSeen){
   first3dFrame=true;document.body.classList.add('cabin3d-ready');
@@ -637,9 +666,9 @@ function tick(ms){if(window.TruckCabinStartup?.isCancelled?.()){stopFor2D();retu
 function init(){try{
  if(window.TruckCabinStartup?.isCancelled?.())return;
  init3d();initUi();resize();host.hidden=false;
- window.TruckCabinView={active:true,stopFor2D,paint,renderer,scene,camera,mounts,shell,version:'6.0.0-alpha.REBUILD-DEV.16-RC16',getDeviceDiagnostics:()=>registry.status(),getQualityDiagnostics:()=>({tier:b.snapshot().quality,webglPixelRatio:appliedPixelRatio,mirrorFrames:frame,contextLossCount}),displaySurfaces,getDisplayCalibration:()=>displayCal.normalize(displayCalibration),physicalButtons,getBrakeCalibration:()=>TruckV6BrakeCabinInstance().getCalibration(),getState:()=>b.snapshot(),getPaint:()=>paint.get(),getInteractionCalibration:()=>interactionCal.normalize(interactionCalibration),getWiperHitCorners:()=>wiperHitCorners()?.map(p=>({x:p.x,y:p.y,z:p.z}))||null};
+ window.TruckCabinView={active:true,stopFor2D,paint,renderer,scene,camera,mounts,shell,version:'6.0.0-alpha.REBUILD-DEV.17-P09-RC12',getDeviceDiagnostics:()=>registry.status(),getQualityDiagnostics:()=>({tier:b.snapshot().quality,webglPixelRatio:appliedPixelRatio,mirrorFrames:frame,contextLossCount}),displaySurfaces,getTextDiagnostics:()=>cssText.diagnostics(),getDisplayCalibration:()=>displayCal.normalize(displayCalibration),physicalButtons,getBrakeCalibration:()=>TruckV6BrakeCabinInstance().getCalibration(),getState:()=>b.snapshot(),getPaint:()=>currentPaint().get(),getInteractionCalibration:()=>interactionCal.normalize(interactionCalibration),getWiperHitCorners:()=>wiperHitCorners()?.map(p=>({x:p.x,y:p.y,z:p.z}))||null};
  requestAnimationFrame(tick);
- }catch(e){console.error('RC15 integration failed',e);if(renderer)renderer.dispose();document.body.classList.remove('cabin3d-ready');host.hidden=true;window.TruckCabinStartup?.fail(e);}
+ }catch(e){console.error('RC15 integration failed',e);cssText?.dispose();TruckTextTexture.disableCapture();if(renderer)renderer.dispose();document.body.classList.remove('cabin3d-ready');host.hidden=true;window.TruckCabinStartup?.fail(e);}
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

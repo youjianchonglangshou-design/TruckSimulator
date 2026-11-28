@@ -276,9 +276,9 @@ function create(THREE,offsets={},rotations={},scales={}){
   extrudeGrip(outline,.035,0,0,.094,M.dark,'shifter-knob');
   // Model labels are local canvas-texture art on genuine THREE mesh, not HTML.
   function textPlate(txt,w,h,font,color='white'){
-   const c=document.createElement('canvas');c.width=192;c.height=256;const ctx=c.getContext('2d');
+   const H=globalThis.TruckTextTexture,c=H?H.canvas(192,256):document.createElement('canvas');if(!H){c.width=192;c.height=256;}const ctx=H?H.context(c):c.getContext('2d');
    ctx.clearRect(0,0,192,256);ctx.fillStyle=color;ctx.font=font;ctx.textAlign='center';ctx.textBaseline='middle';
-   ctx.fillText(txt,96,126);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+   ctx.fillText(txt,96,126);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;H?.configure(THREE,t);
    const material=new THREE.MeshBasicMaterial({map:t,transparent:true,side:THREE.DoubleSide,toneMapped:false});resources.push(material);
    return {geometry:new THREE.PlaneGeometry(w,h),material};
   }

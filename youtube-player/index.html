@@ -1893,14 +1893,23 @@ async function fetchYouTubeMeta(videoId) {
 let ytApiReady = false;
 let ytApiPromise = null;
 function loadYouTubeAPI() {
-  if (ytApiReady) return Promise.resolve();
+  if (window.YT && typeof window.YT.Player === 'function') { ytApiReady = true; return Promise.resolve(); }
   if (ytApiPromise) return ytApiPromise;
-  ytApiPromise = new Promise(resolve => {
-    window.onYouTubeIframeAPIReady = () => { ytApiReady = true; resolve(); };
+  ytApiPromise = new Promise((resolve, reject) => {
     const tag = document.createElement('script');
+    let settled = false;
+    const finish = error => {
+      if (settled) return;
+      settled = true; clearTimeout(timer); tag.onerror = null;
+      if (error) { ytApiReady = false; tag.remove(); reject(error); }
+      else { ytApiReady = true; resolve(); }
+    };
+    const timer = setTimeout(() => finish(new Error('YouTube API loading timed out')), 12000);
+    window.onYouTubeIframeAPIReady = () => finish(null);
+    tag.onerror = () => finish(new Error('YouTube API unavailable'));
     tag.src = 'https://www.youtube.com/iframe_api';
     document.head.appendChild(tag);
-  });
+  }).catch(error => { ytApiPromise = null; throw error; });
   return ytApiPromise;
 }
 
@@ -1916,6 +1925,21 @@ const Player = (() => {
   let activeEngine = 'audio'; // 'audio' or 'youtube'
   let ytPlayer = null;
   let ytReady = false;
+  let ytPlayerPromise = null, playerGeneration = 0, trackGeneration = 0;
+  let playbackTimer = null, retryYoutube = false;
+  function clearPlaybackTimer() { clearTimeout(playbackTimer); playbackTimer = null; }
+  function playbackFailure(message) {
+    clearPlaybackTimer(); retryYoutube = true;
+    fire('youtubeplayback', false); fire('playstate', false);
+    fire('error', message + ' — 請再按播放重試，或選擇下一首。');
+  }
+  function watchPlayback() {
+    clearPlaybackTimer();
+    const generation = trackGeneration;
+    playbackTimer = setTimeout(() => {
+      if (generation === trackGeneration && activeEngine === 'youtube' && !isPlaying()) playbackFailure('YouTube 播放逾時');
+    }, 15000);
+  }
   let ytTimeupdateInterval = null;
   let currentVolume = 1;
 
@@ -1932,30 +1956,50 @@ const Player = (() => {
   // === YouTube player management ===
   function ensureYTPlayer() {
     if (ytPlayer && ytReady) return Promise.resolve();
-    if (ytPlayer) return new Promise(r => { const check = setInterval(() => { if (ytReady) { clearInterval(check); r(); } }, 100); });
-    return new Promise(resolve => {
-      ytPlayer = new YT.Player('yt-player-target', {
-        height: '100%', width: '100%',
-        playerVars: { controls: 0, disablekb: 1, modestbranding: 1, rel: 0, playsinline: 1, origin: location.origin },
-        events: {
-          onReady: () => { ytReady = true; resolve(); },
-          onStateChange: (e) => {
-            if (activeEngine !== 'youtube') return;
-            fire('youtubeplayback', e.data === YT.PlayerState.PLAYING);
-            if (e.data === YT.PlayerState.PLAYING) fire('playstate', true);
-            else if (e.data === YT.PlayerState.PAUSED) fire('playstate', false);
-            else if (e.data === YT.PlayerState.ENDED) fire('ended');
-          },
-          onError: () => {
-            if (activeEngine === 'youtube') {
-              fire('youtubeplayback', false);
-              fire('error', 'YouTube playback error');
-              playNext();
+    if (ytPlayerPromise) return ytPlayerPromise;
+    const generation = ++playerGeneration;
+    ytPlayerPromise = new Promise((resolve, reject) => {
+      let settled = false;
+      const fail = error => {
+        if (settled) return;
+        settled = true; clearTimeout(timer); ++playerGeneration; ytReady = false;
+        try { ytPlayer?.destroy(); } catch (_) {}
+        ytPlayer = null;
+        const parent = document.getElementById('np-yt-container');
+        if (parent && !document.getElementById('yt-player-target')) {
+          const target = document.createElement('div'); target.id = 'yt-player-target'; parent.appendChild(target);
+        }
+        reject(error);
+      };
+      const timer = setTimeout(() => fail(new Error('YouTube player initialization timed out')), 12000);
+      try {
+        ytPlayer = new YT.Player('yt-player-target', {
+          height: '100%', width: '100%',
+          playerVars: { controls: 0, disablekb: 1, modestbranding: 1, rel: 0, playsinline: 1, origin: location.origin },
+          events: {
+            onReady: () => { if (generation !== playerGeneration || settled) return; settled = true; clearTimeout(timer); ytReady = true; resolve(); },
+            onStateChange: (e) => {
+              if (generation !== playerGeneration || activeEngine !== 'youtube' || !ytReady) return;
+              if (e.data === YT.PlayerState.PLAYING) { clearPlaybackTimer(); retryYoutube = false; }
+              else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) clearPlaybackTimer();
+              fire('youtubeplayback', e.data === YT.PlayerState.PLAYING);
+              if (e.data === YT.PlayerState.PLAYING) fire('playstate', true);
+              else if (e.data === YT.PlayerState.PAUSED) fire('playstate', false);
+              else if (e.data === YT.PlayerState.ENDED) fire('ended');
+            },
+            onError: (e) => {
+              if (generation !== playerGeneration) return;
+              if (!ytReady) { fail(new Error('YouTube player error '+e.data)); return; }
+              if (activeEngine === 'youtube') playbackFailure('YouTube 播放失敗 ('+e.data+')');
+            },
+            onAutoplayBlocked: () => {
+              if (generation === playerGeneration && activeEngine === 'youtube') playbackFailure('瀏覽器阻擋自動播放');
             }
           }
-        }
-      });
-    });
+        });
+      } catch (error) { fail(error); }
+    }).finally(() => { ytPlayerPromise = null; });
+    return ytPlayerPromise;
   }
 
   function startYTTimePolling() {
@@ -1981,6 +2025,8 @@ const Player = (() => {
 
   // === Core track loading ===
   async function loadTrack(track, autoplay) {
+    const generation = ++trackGeneration;
+    clearPlaybackTimer(); retryYoutube = false;
     currentTrack = track;
     fire('youtubeplayback', false);
 
@@ -1991,15 +2037,22 @@ const Player = (() => {
       if (currentBlobUrl) { URL.revokeObjectURL(currentBlobUrl); currentBlobUrl = null; }
 
       activeEngine = 'youtube';
-      await loadYouTubeAPI();
-      await ensureYTPlayer();
-      ytPlayer.setVolume(currentVolume * 100);
-      if (autoplay === false) {
-        ytPlayer.cueVideoById(track.videoId);
-      } else {
-        ytPlayer.loadVideoById(track.videoId);
+      stopYTTimePolling();
+      try {
+        await loadYouTubeAPI();
+        if (generation !== trackGeneration) return false;
+        await ensureYTPlayer();
+        if (generation !== trackGeneration) return false;
+        ytPlayer.setVolume(currentVolume * 100);
+        if (autoplay === false) ytPlayer.cueVideoById(track.videoId);
+        else { watchPlayback(); ytPlayer.loadVideoById(track.videoId); }
+        startYTTimePolling();
+      } catch (error) {
+        if (generation !== trackGeneration) return false;
+        stopYTTimePolling();
+        fire('trackchange', track); playbackFailure(error.message || 'YouTube 載入失敗');
+        return false;
       }
-      startYTTimePolling();
     } else {
       // Stop YouTube engine
       stopYTTimePolling();
@@ -2008,6 +2061,7 @@ const Player = (() => {
       activeEngine = 'audio';
       if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
       const blob = await DB.getTrackBlob(track.id);
+      if (generation !== trackGeneration) return false;
       if (!blob) { fire('error', 'File not found in storage'); return; }
       currentBlobUrl = URL.createObjectURL(blob);
       audio.src = currentBlobUrl;
@@ -2016,15 +2070,26 @@ const Player = (() => {
 
     fire('trackchange', track);
     updateMediaSession(track);
+    return true;
   }
 
   // === Delegated controls ===
   function play() {
-    if (activeEngine === 'youtube' && ytPlayer && ytReady) { ytPlayer.playVideo(); return Promise.resolve(); }
+    if (activeEngine === 'youtube') {
+      if (!currentTrack) return Promise.resolve();
+      if (retryYoutube || !ytPlayer || !ytReady) return loadTrack(currentTrack, true);
+      try { watchPlayback(); ytPlayer.playVideo(); } catch (error) { playbackFailure(error.message || 'YouTube 播放失敗'); }
+      return Promise.resolve();
+    }
     return audio.play().catch(() => {});
   }
   function pause() {
-    if (activeEngine === 'youtube' && ytPlayer && ytReady) { ytPlayer.pauseVideo(); return; }
+    clearPlaybackTimer();
+    if (activeEngine === 'youtube') {
+      if (ytPlayer && ytReady) ytPlayer.pauseVideo();
+      else { ++trackGeneration; retryYoutube = true; }
+      return;
+    }
     audio.pause();
   }
   function togglePlay() { isPlaying() ? pause() : play(); }
@@ -2040,7 +2105,7 @@ const Player = (() => {
   }
   function getVolume() { return currentVolume; }
   function isPlaying() {
-    if (activeEngine === 'youtube' && ytPlayer && ytReady) return ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+    if (activeEngine === 'youtube') return !retryYoutube && !!(ytPlayer && ytReady && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING);
     return !audio.paused;
   }
   function getCurrentTrack() { return currentTrack; }
@@ -2055,8 +2120,8 @@ const Player = (() => {
   function getActiveEngine() { return activeEngine; }
 
   async function playTrack(track) {
-    await loadTrack(track, true);
-    if (activeEngine === 'audio') await play();
+    const loaded = await loadTrack(track, true);
+    if (loaded && activeEngine === 'audio' && currentTrack === track) await play();
   }
 
   async function playNext() {
@@ -2347,6 +2412,7 @@ const UI = (() => {
       renderQueue();
     });
 
+    Player.on('error', message => showToast(message));
     Player.on('playstate', (playing) => {
       updatePlayButtons(playing);
     });

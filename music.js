@@ -18,7 +18,7 @@ function init({onOpen=()=>{},onClose=()=>{}}={}){
   dialog.setAttribute('aria-hidden','true');
   const frame=document.createElement('iframe');frame.id='truckYoutubeFrame';
   frame.title='YouTube Playlist 播放器';
-  frame.src='youtube-player/index.html?truckEmbed=1&v=16-RC7'+(window.TruckMobileMusic?'&device=mobile':'');
+  frame.src='youtube-player/index.html?truckEmbed=1&v=17-P09-RC14'+(window.TruckMobileMusic?'&device=mobile':'');
   frame.setAttribute('allow','autoplay; encrypted-media; picture-in-picture');
   frame.setAttribute('allowtransparency','true');
   frame.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
@@ -32,22 +32,28 @@ function init({onOpen=()=>{},onClose=()=>{}}={}){
     dialog.append(notice);
   }
   document.body.append(button,backdrop,dialog);
-  let open=false;
+  let open=false;dialog.inert=true;frame.tabIndex=-1;
   window.TruckMobileMusic?.attach(frame,()=>open);
   function show(){
     if(open)return;
-    onOpen();open=true;
+    open=true;onOpen();dialog.inert=false;frame.tabIndex=0;
     dialog.classList.add('is-open');backdrop.classList.add('is-open');
     dialog.setAttribute('aria-hidden','false');
     button.setAttribute('aria-expanded','true');
     try{if(window.TruckMobileMusic)window.TruckMobileMusic.open(frame);else frame.contentWindow.postMessage({type:'truck-youtube-open'},'*')}catch(_){}
   }
-  function hide(){
+  function hide(restoreFocus=true){
     if(!open)return;
-    open=false;dialog.classList.remove('is-open');backdrop.classList.remove('is-open');
+    open=false;frame.tabIndex=-1;dialog.inert=true;dialog.classList.remove('is-open');backdrop.classList.remove('is-open');
     dialog.setAttribute('aria-hidden','true');
     button.setAttribute('aria-expanded','false');
     onClose();button.blur();
+    if(restoreFocus!==false){
+      frame.blur();try{window.focus()}catch(_){}
+      const scene=document.getElementById('scene');
+      if(scene){scene.tabIndex=-1;scene.focus({preventScroll:true});}
+      else document.activeElement?.blur();
+    }
     /* IMPORTANT: do not remove/reload/display:none the iframe, or pause its playback. */
   }
   dialog.querySelector('#truckMusicFileClose')?.addEventListener('click',hide);

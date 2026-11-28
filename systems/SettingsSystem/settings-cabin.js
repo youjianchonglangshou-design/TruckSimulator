@@ -82,7 +82,7 @@ function renderSettings(d){
  const paintNote=svc.add(paintSection,'small',null,'');
 }
 function openModal(name){window.TruckMobileTouch?.release();
- if(document.querySelector('#truckMusicDialog')?.open||(window.TruckMobileModal&&document.querySelector('#truckMusicDialog.is-open')))return;
+ if(window.TruckSharedMusic?.isOpen())return;
  if(name!=='settings')svc.action('mirrorEnd');
  svc.ui.interactionTuner?.setOpen(false);
  disposeNicoPreview();svc.ui.modalBody.replaceChildren();svc.ui.modal.classList.add('open');svc.ui.modal.classList.toggle('mirror-live-preview',name==='settings');if(!svc.scoped&&window.TruckCabinView)window.TruckCabinView.uiPaused=true;svc.b.releaseKeys();

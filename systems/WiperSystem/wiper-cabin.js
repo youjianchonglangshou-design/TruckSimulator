@@ -37,7 +37,7 @@ function updateWiperHitPreview(s){
  if(polygon.getAttribute('points')!==points)polygon.setAttribute('points',points);
 }
 function wiperTarget(e){
- if(e.target!==polygon||preview.hasAttribute('hidden')||!document.body.classList.contains('cabin3d-ready')||!svc.mounts?.root.visible||svc.ui.modal?.classList.contains('open')||svc.b.snapshot().view!==0||document.querySelector('#truckMusicDialog')?.open||document.querySelector('#truckMusicBackdrop.is-open'))return null;
+ if(e.target!==polygon||preview.hasAttribute('hidden')||!document.body.classList.contains('cabin3d-ready')||!svc.mounts?.root.visible||svc.ui.modal?.classList.contains('open')||svc.b.snapshot().view!==0||window.TruckSharedMusic?.isOpen())return null;
  return svc.physicalButtons.find(x=>x.kind==='wiper')||null;
 }
 return Object.freeze({mount,unmount,surface,wiperHitCorners,updateWiperHitPreview,wiperTarget});

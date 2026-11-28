@@ -1,4 +1,4 @@
-/* TruckSimulator v6.0.0-alpha.REBUILD-DEV.17-P09-RC13 — real-game bridge into user-approved RC15 Three.js shell.
+/* TruckSimulator v6.0.0-alpha.REBUILD-DEV.17-P09-RC14 — real-game bridge into user-approved RC15 Three.js shell.
    No duplicate physics, stages, weather, music player, or quality controller. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id), b=window.TruckCabinBridge, M=window.TruckCabinRebuild, U=window.TruckCabinUserLayout;
@@ -183,7 +183,7 @@ function updateCalibration(id,field,axis,value){
 function registerMediaButtons(){
  const youtube=displaySurfaces.youtube.mesh;
  const youtubeButton={name:'rc11-3d-youtube',kind:'youtube',label:'YouTube Music',mode:'media',mesh:youtube,
-  material:youtube.material,normalZ:youtube.position.z,run:()=>{closeModal();action('music')}};
+  material:youtube.material,normalZ:youtube.position.z,run:()=>action('music')};
  youtubeButton.baseColor=youtube.material.color?.clone?.();
  physicalButtons.push(youtubeButton);
  const parent=mounts.parts.get('parking-monitor')?.content;
@@ -413,14 +413,14 @@ function startShifterDrag(e){return TruckV6TransmissionCabinInstance().startShif
 function moveShifterDrag(e){return TruckV6TransmissionCabinInstance().moveShifterDrag(e)}
 function finishShifterDrag(e,cancel=false){return TruckV6TransmissionCabinInstance().finishShifterDrag(e,cancel)}
 function ownsGear(id){return TruckV6TransmissionCabinInstance().ownsPointer(id)}
+function resetPhysicalPress(){cancelPhysicalLongPress();setPhysicalFeedback(physicalPressed?.button,0);physicalPressed=null;}
+function cancelCabinInput(){resetPhysicalPress();carGearDrag=null;TruckV6TransmissionCabinInstance().cancelDrag();setPhysicalFeedback(physicalHover,0);physicalHover=null;hidePhysicalTooltip();$('scene').style.cursor='';}
 function initPhysicalPointerInput(){
  const surface=$('scene');
  const consume=e=>{e.preventDefault();e.stopImmediatePropagation()};
- const resetPress=()=>{
-  cancelPhysicalLongPress();setPhysicalFeedback(physicalPressed?.button,0);physicalPressed=null;
- };
+ const resetPress=resetPhysicalPress;
  const startPress=(e,nativeWiper=false)=>{
-  if(e.button!==0 && e.pointerType==='mouse')return;
+  if(window.TruckSharedMusic?.isOpen()||(e.button!==0 && e.pointerType==='mouse'))return;
   if(!nativeWiper&&startShifterDrag(e)){consume(e);return;}
   const button=nativeWiper?wiperTarget(e):pickPhysicalButton(e);if(!button)return;
   cancelPhysicalLongPress();hidePhysicalTooltip();
@@ -486,7 +486,7 @@ function initPhysicalPointerInput(){
  TruckV6WiperCabinInstance().surface().addEventListener('contextmenu',e=>{if(wiperTarget(e))consume(e)},true);
  surface.addEventListener('contextmenu',e=>{if(pickPhysicalButton(e))consume(e)},true);
  window.addEventListener('blur',()=>{
-  resetPress();carGearDrag=null;TruckV6TransmissionCabinInstance().cancelDrag();setPhysicalFeedback(physicalHover,0);physicalHover=null;hidePhysicalTooltip();surface.style.cursor='';
+  cancelCabinInput();
  });
 }
 
@@ -516,7 +516,7 @@ function initUi(){
  ui.weatherText=ui.weather.querySelector('span');
  ui.danger=add(host,'div','cabDanger','');ui.danger.hidden=true;
  ui.help=add(host,'button','cabHelp','?','cab-control');on(ui.help,()=>openModal('help'));
- add(host,'span','cabBrand','TERMINAL DRIVER · v6.0.0-alpha.REBUILD-DEV.17-P09-RC13');
+ add(host,'span','cabBrand','TERMINAL DRIVER · v6.0.0-alpha.REBUILD-DEV.17-P09-RC14');
  const make=(id,title,func,cls='')=>{const btn=add(host,'button',id,title,'cab-physical '+cls);btn.title=title;btn.setAttribute('aria-label',title);on(btn,func);return btn};
  ui.returnCab=add(host,'button','cabReturn','上車','cab-control');on(ui.returnCab,()=>action('view'));
  // The seven physical door/wheel switches are Three.js meshes, not HTML buttons.
@@ -677,7 +677,7 @@ function tick(ms){if(window.TruckCabinStartup?.isCancelled?.()){stopFor2D();retu
 function init(){try{
  if(window.TruckCabinStartup?.isCancelled?.())return;
  init3d();initUi();resize();host.hidden=false;
- window.TruckCabinView={active:true,stopFor2D,paint,renderer,scene,camera,mounts,shell,version:'6.0.0-alpha.REBUILD-DEV.17-P09-RC13',getDeviceDiagnostics:()=>registry.status(),getQualityDiagnostics:()=>({tier:b.snapshot().quality,webglPixelRatio:appliedPixelRatio,mirrorFrames:frame,contextLossCount}),displaySurfaces,getTextDiagnostics:()=>cssText.diagnostics(),getDisplayCalibration:()=>displayCal.normalize(displayCalibration),physicalButtons,getBrakeCalibration:()=>TruckV6BrakeCabinInstance().getCalibration(),getState:()=>b.snapshot(),getPaint:()=>currentPaint().get(),getInteractionCalibration:()=>interactionCal.normalize(interactionCalibration),getWiperHitCorners:()=>wiperHitCorners()?.map(p=>({x:p.x,y:p.y,z:p.z}))||null};
+ window.TruckCabinView={active:true,cancelInput:cancelCabinInput,prepareMusicOpen:()=>{if(ui.modal.classList.contains('open'))closeModal();else window.TruckCabinView.uiPaused=false;},syncPauseState:()=>{window.TruckCabinView.uiPaused=!!window.TruckCabinView.active&&ui.modal.classList.contains('open');},stopFor2D,paint,renderer,scene,camera,mounts,shell,version:'6.0.0-alpha.REBUILD-DEV.17-P09-RC14',getDeviceDiagnostics:()=>registry.status(),getQualityDiagnostics:()=>({tier:b.snapshot().quality,webglPixelRatio:appliedPixelRatio,mirrorFrames:frame,contextLossCount}),displaySurfaces,getTextDiagnostics:()=>cssText.diagnostics(),getDisplayCalibration:()=>displayCal.normalize(displayCalibration),physicalButtons,getBrakeCalibration:()=>TruckV6BrakeCabinInstance().getCalibration(),getState:()=>b.snapshot(),getPaint:()=>currentPaint().get(),getInteractionCalibration:()=>interactionCal.normalize(interactionCalibration),getWiperHitCorners:()=>wiperHitCorners()?.map(p=>({x:p.x,y:p.y,z:p.z}))||null};
  requestAnimationFrame(tick);
  }catch(e){console.error('RC15 integration failed',e);cssText?.dispose();TruckTextTexture.disableCapture();if(renderer)renderer.dispose();document.body.classList.remove('cabin3d-ready');host.hidden=true;window.TruckCabinStartup?.fail(e);}
 }

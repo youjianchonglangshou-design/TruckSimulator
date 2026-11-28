@@ -5,7 +5,7 @@ const dragLocal=n=>svc.dragLocal?svc.dragLocal(n):svc.local(n);
 let shifterDrag=null,previousGear=null,previousTouch=null,knobCanvas=null,knobTexture=null;
 function ownsPointer(id){return shifterDrag?.id===id;}
 function isDragging(){return !!shifterDrag;}
-function cancelDrag(){shifterDrag=null;}
+function cancelDrag(){if(!shifterDrag)return;shifterDrag=null;const knob=dragLocal('shifter-knob-carrier');if(knob)knob.position.y=svc.b.snapshot().gear*.085;}
 function pickShifterKnob(e){
  if(!document.body.classList.contains('cabin3d-ready')||!(svc.dragRoot||svc.mounts?.root)?.visible||(svc.ui.modal?.classList.contains('open'))||svc.b.snapshot().view!==0)return null;
  const rect=svc.canvas.getBoundingClientRect();if(!rect.width||!rect.height)return null;
@@ -30,7 +30,7 @@ function gearAxisInPixels(){
 }
 function startShifterDrag(e){
  const s=svc.b.snapshot();
- if(s.done||s.broken||s.coach||s.view!==0||!pickShifterKnob(e))return false;
+ if(window.TruckSharedMusic?.isOpen()||s.done||s.broken||s.coach||s.view!==0||!pickShifterKnob(e))return false;
  const axis=gearAxisInPixels();if(!axis)return false;
  if(s.hand)svc.action('parkingWarning');
  const rotated=document.body.classList.contains('mobile-rotated'),pt=rotated?svc.b.point(e):{x:e.clientX,y:e.clientY};

@@ -1,5 +1,12 @@
 /* RC35 production implementation, migrated with an explicit capability list. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.TruckV6BrakeCabin=api;})(globalThis,function(){'use strict';
+function drawParkingArtwork(x,w,h){
+  x.fillStyle='#101010';x.strokeStyle='#101010';x.lineWidth=10;
+  x.beginPath();x.arc(116,h/2,78,0,Math.PI*2);x.stroke();
+  x.font='bold 118px Arial,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('P',116,h/2+6);
+  x.font='bold 145px "Microsoft JhengHei","Noto Sans CJK TC",sans-serif';x.fillText('手剎車',545,h/2+8);
+  if(!(globalThis.document?.body?.classList.contains('mobile-game')||!!globalThis.matchMedia?.('(pointer:coarse)')?.matches)){x.font='bold 125px Arial,sans-serif';x.fillText('B',930,h/2+7);}
+}
 function createParkingBrakeSystemCabin(svc){
 let brakeState=null,brakeCalibration=svc.brakeAdjustment.normalize(svc.brakeAdjustment.defaults);
 function getCalibration(){return svc.brakeAdjustment.normalize(brakeCalibration);}
@@ -42,5 +49,5 @@ function update3dParkingBrake(engaged){
 }
 return Object.freeze({getCalibration,create3dParkingBrake,applyParkingBrakeCalibration,update3dParkingBrake});
 }
-return Object.freeze({createParkingBrakeSystemCabin});
+return Object.freeze({createParkingBrakeSystemCabin,drawParkingArtwork});
 });

@@ -1,6 +1,13 @@
 /* RC35 production implementation, migrated with an explicit capability list. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.TruckV6InstrumentCabin=api;})(globalThis,function(){'use strict';
 function createInstrumentSystemCabin(svc){
+// Cache by actual texture and visible data. A newly created surface always draws.
+// Keep the original continuous speedometer arc (no speed quantization).
+const drawn=new WeakMap();
+const context=c=>globalThis.TruckTextTexture?.context(c)||c.getContext('2d');
+const size=c=>globalThis.TruckTextTexture?.size(c)||[c.width,c.height];
+function changed(surface,key){if(drawn.get(surface.texture)===key)return false;drawn.set(surface.texture,key);return true;}
+
 function drawSpeedometer(ctx,speed){
  // Original game's 0..30 km/h speed-dial language, redrawn in the same
  // transparent RC15 instrument texture, without creating another bezel.
@@ -21,8 +28,9 @@ function drawSpeedometer(ctx,speed){
  ctx.restore();
 }
 function drawInstrument(s){
- const speedGear=svc.displaySurfaces.speedGear,hitsTime=svc.displaySurfaces.hitsTime,ctx=speedGear.canvas.getContext('2d'),c=speedGear.canvas;
- ctx.clearRect(0,0,c.width,c.height);
+ const speedGear=svc.displaySurfaces.speedGear,hitsTime=svc.displaySurfaces.hitsTime,ctx=context(speedGear.canvas),c=speedGear.canvas;
+ if(changed(speedGear,JSON.stringify([s.speed,s.gear]))){
+ ctx.clearRect(0,0,...size(c));
  // No extra full rectangular frame or background: the approved RC15 recessed
  // panel is already behind this transparent canvas and owns its housing.
  drawSpeedometer(ctx,s.speed);
@@ -30,8 +38,10 @@ function drawInstrument(s){
  ctx.fillStyle='#bdd8e4';ctx.font='bold 44px system-ui';ctx.fillText('km/h',285,420);
  ctx.fillStyle='#a0eadb';ctx.font='bold 46px system-ui';ctx.fillText('GEAR  '+({1:'D',0:'N','-1':'R'}[s.gear]||'N'),285,546);
  speedGear.texture.needsUpdate=true;
- const right=hitsTime.canvas.getContext('2d'),rc=hitsTime.canvas;
- right.clearRect(0,0,rc.width,rc.height);
+ }
+ if(changed(hitsTime,JSON.stringify([Math.floor(s.elapsed),s.hits]))){
+ const right=context(hitsTime.canvas),rc=hitsTime.canvas;
+ right.clearRect(0,0,...size(rc));
  right.save();right.translate(-604,0);
  const ctxRight=right;
  ctxRight.strokeStyle='#527080';ctxRight.lineWidth=3;ctxRight.beginPath();ctxRight.moveTo(606,58);ctxRight.lineTo(606,585);ctxRight.stroke();
@@ -40,16 +50,20 @@ function drawInstrument(s){
  ctxRight.fillStyle='#f0fbff';ctxRight.font='bold 78px system-ui';ctxRight.fillText(`${String(Math.floor(s.elapsed/60)).padStart(2,'0')}:${String(Math.floor(s.elapsed)%60).padStart(2,'0')}`,640,239);
  ctxRight.fillStyle=s.hits>=7?'#ffb79b':'#f0fbff';ctxRight.fillText(`${s.hits}/10`,640,489);
  right.restore();hitsTime.texture.needsUpdate=true;
+ }
  for(const [id,label,value] of [
   ['angle','聯結角',s.coupling?'—':`${Math.round(s.angle)}°`],
   ['distance',s.coupling?'銜接距離':s.mission?.route==='out'?'迄點距離':'後端距離',s.distance===null?'—':s.distance.toFixed(1)+' m']
  ]){
-  const d=svc.displaySurfaces[id],x=d.canvas.getContext('2d');x.clearRect(0,0,d.canvas.width,d.canvas.height);
+  const d=svc.displaySurfaces[id];
   d.mesh.visible=s.difficultyMode===0&&s.view===0;
   if(!d.mesh.visible)continue;
-  x.fillStyle='#152a40';x.fillRect(0,0,d.canvas.width,d.canvas.height);
-  x.fillStyle='#b6d4e0';x.textAlign='center';x.font='bold 72px "Microsoft JhengHei",sans-serif';x.fillText(label,d.canvas.width/2,82);
-  x.fillStyle=id==='angle'&&!s.coupling&&Math.abs(Math.round(s.angle))>=45?'#ff6f70':'#f4ffff';x.font='bold 130px system-ui';x.fillText(value,d.canvas.width/2,210);
+  const warning=id==='angle'&&!s.coupling&&Math.abs(Math.round(s.angle))>=45;
+  if(!changed(d,JSON.stringify([label,value,warning])))continue;
+  const x=context(d.canvas),[w,h]=size(d.canvas);x.clearRect(0,0,w,h);
+  x.fillStyle='#152a40';x.fillRect(0,0,w,h);
+  x.fillStyle='#b6d4e0';x.textAlign='center';x.font='bold 72px "Microsoft JhengHei",sans-serif';x.fillText(label,w/2,82);
+  x.fillStyle=id==='angle'&&!s.coupling&&Math.abs(Math.round(s.angle))>=45?'#ff6f70':'#f4ffff';x.font='bold 130px system-ui';x.fillText(value,w/2,210);
   d.texture.needsUpdate=true;
  }
 }

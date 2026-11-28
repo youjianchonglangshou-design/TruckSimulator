@@ -1,12 +1,10 @@
 /* RC35 production implementation, migrated with an explicit capability list. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.TruckV6MusicCabin=api;})(globalThis,function(){'use strict';
+function paintEmblem(c){const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.fillStyle='#ff0033';x.beginPath();x.roundRect(28,72,c.width-56,c.height-144,61);x.fill();x.fillStyle='#fff';x.beginPath();x.moveTo(214,132);x.lineTo(339,192);x.lineTo(214,252);x.closePath();x.fill();}
+function drawYoutubeBadge(c){const src=document.createElement('canvas');src.width=512;src.height=384;paintEmblem(src);const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.save();x.scale(c.width/256,c.height/256);x.fillStyle='#ff0033';x.beginPath();x.roundRect(7,7,242,242,29);x.fill();x.drawImage(src,28,72,456,240,24,70,208,116);x.restore();}
 function createMusicPlayerSystemCabin(svc){
 function drawYoutube(){
- const d=svc.displaySurfaces.youtube,x=d.canvas.getContext('2d'),c=d.canvas;
- x.clearRect(0,0,c.width,c.height);
- // Keep only the actual YouTube emblem visible on the approved radio mount.
- x.fillStyle='#ff0033';x.beginPath();x.roundRect(28,72,c.width-56,c.height-144,61);x.fill();
- x.fillStyle='#fff';x.beginPath();x.moveTo(214,132);x.lineTo(339,192);x.lineTo(214,252);x.closePath();x.fill();
+ const d=svc.displaySurfaces.youtube;drawYoutubeBadge(d.canvas);
  d.texture.needsUpdate=true;
 }
 // A separate, non-interactive texture inside the existing radio screen.
@@ -35,5 +33,5 @@ function updateYoutubeWave(ms){
 }
 return Object.freeze({drawYoutube,createWaveSurface,updateYoutubeWave});
 }
-return Object.freeze({createMusicPlayerSystemCabin});
+return Object.freeze({createMusicPlayerSystemCabin,drawYoutubeBadge});
 });

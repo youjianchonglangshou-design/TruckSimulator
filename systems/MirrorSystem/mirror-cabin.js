@@ -51,25 +51,36 @@ function createMirrorCabin({T,mounts,b,position,add,btn,action,makeButton,dragHi
  }
  }
  function renderSettings(section,current){
- const mirrors=section('四面後照鏡精細調整（直接在此頁操作）','mirrors');
+ const car=!!current.settings.center,count=car?'三面':'四面';const mirrors=section(count+'後照鏡精細調整（直接在此頁操作）','mirrors');
  add(mirrors,'p',null,'依原規則須停車、回正並使用空檔；開始調整會自動拉起手煞車。');
  const mirrorRegion=add(mirrors,'div',null,'','cab-mirror-setting');
- const mirrorKeys=[['left','左上後照鏡'],['right','右上後照鏡'],['leftWide','左下廣角鏡'],['rightWide','右下廣角鏡']];
- let started=false;
+ const mirrorKeys=car?[['left','左後照鏡'],['right','右後照鏡'],['center','中央後照鏡']]:[['left','左上後照鏡'],['right','右上後照鏡'],['leftWide','左下廣角鏡'],['rightWide','右下廣角鏡']];
+ let started=false;const begin=()=>{if(started&&b.snapshot().view===0&&Math.abs(b.snapshot().probe)<.5&&Math.abs(b.snapshot().speed)<=.18)return true;started=!!action('mirrorBegin');return started;};
  for(const [key,title] of mirrorKeys){
   const group=add(mirrorRegion,'section');add(group,'b',null,title);
   for(const [field,label,min,max] of [['yaw','左右角度',-28,28],['pitch','上下角度',-22,32]]){
    const wrap=add(group,'label',null,'','cab-setting-range');add(wrap,'span',null,label);
-   const slider=add(wrap,'input');slider.type='range';slider.min=String(min);slider.max=String(max);slider.step='1';slider.value=current.settings[key]?.[field]??0;
-   const val=add(wrap,'output',null,slider.value+'°');slider.addEventListener('input',()=>{
-    if(!started){if(!action('mirrorBegin')){slider.value=String(b.snapshot().settings[key]?.[field]??0);return}started=true}
-    const setting=b.snapshot().settings[key]||{yaw:0,pitch:0};action('mirrorSet',{id:key,yaw:field==='yaw'?+slider.value:setting.yaw,pitch:field==='pitch'?+slider.value:setting.pitch});action('mirrorRefresh');
-    val.textContent=String(slider.value)+'°';
+   const slider=add(wrap,'input');slider.dataset.mirrorKey=key;slider.dataset.mirrorField=field;slider.type='range';slider.min=String(min);slider.max=String(max);slider.step='1';slider.value=current.settings[key]?.[field]??0;
+   const val=add(wrap,'output',null,slider.value+'°');const sync=()=>{slider.value=String(b.snapshot().settings[key]?.[field]??0);val.textContent=slider.value+'°';};
+   const apply=requested=>{if(!begin()){sync();return;}
+    const setting=b.snapshot().settings[key]||{yaw:0,pitch:0};action('mirrorSet',{id:key,yaw:field==='yaw'?requested:setting.yaw,pitch:field==='pitch'?requested:setting.pitch});sync();
+   };slider.addEventListener('input',()=>apply(+slider.value));slider.addEventListener('change',sync);
+   // The 3D modal occasionally suppresses native range input events. Own only
+   // these sliders' unrotated pointer gestures; rotated mobile uses its existing handler.
+   slider.style.touchAction='none';
+   const at=e=>{const r=slider.getBoundingClientRect(),pad=7;let f=Math.max(0,Math.min(1,(e.clientX-r.left-pad)/Math.max(1,r.width-2*pad)));if(getComputedStyle(slider).direction==='rtl')f=1-f;apply(Math.round(min+(max-min)*f));};
+   let drag=null;
+   slider.addEventListener('pointerdown',e=>{if(window.MobileLandscape?.rotated||e.button!==0||drag)return;e.preventDefault();slider.focus({preventScroll:true});if(!begin()){sync();return;}
+    const id=e.pointerId,controller=new AbortController(),opt={capture:true,signal:controller.signal};drag=controller;
+    const stop=()=>{controller.abort();drag=null;sync();};
+    window.addEventListener('pointermove',q=>{if(q.pointerId!==id)return;if(!slider.isConnected||!(q.buttons&1)){stop();return;}q.preventDefault();at(q);},opt);
+    window.addEventListener('pointerup',q=>{if(q.pointerId===id){if(slider.isConnected)at(q);stop();}},opt);
+    window.addEventListener('pointercancel',q=>{if(q.pointerId===id)stop();},opt);window.addEventListener('blur',stop,opt);at(e);
    });
   }
-  btn(group,'此鏡重設',()=>{if(!started){if(!action('mirrorBegin'))return;started=true}action('mirrorReset',key);for(const slider of group.querySelectorAll('input[type=range]')){slider.value='0';slider.nextElementSibling.textContent='0°'}});
+  btn(group,'此鏡重設',()=>{if(!started){if(!action('mirrorBegin'))return;started=true}action('mirrorReset',key);for(const slider of group.querySelectorAll('input[type=range]')){slider.value=String(b.snapshot().settings[slider.dataset.mirrorKey][slider.dataset.mirrorField]);slider.nextElementSibling.textContent=slider.value+'°'}});
  }
- btn(mirrors,'四面後照鏡全部重設',()=>{if(!started){if(!action('mirrorBegin'))return;started=true}action('mirrorReset');for(const slider of mirrorRegion.querySelectorAll('input[type=range]')){slider.value='0';slider.nextElementSibling.textContent='0°'}});
+ btn(mirrors,count+'後照鏡全部重設',()=>{if(!started){if(!action('mirrorBegin'))return;started=true}action('mirrorReset');for(const slider of mirrorRegion.querySelectorAll('input[type=range]')){slider.value=String(b.snapshot().settings[slider.dataset.mirrorKey][slider.dataset.mirrorField]);slider.nextElementSibling.textContent=slider.value+'°'}});
  }
 function mirrors(s){
  // Keep the approved RC15 glass and mirror camera placement unchanged.

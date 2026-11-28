@@ -1,9 +1,9 @@
 /* RC35 production implementation, migrated with an explicit capability list. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.TruckV6SettingsCabin=api;})(globalThis,function(){'use strict';
 function createSettingsSystemCabin(svc){
-let nicoPreview=null;
-function disposeNicoPreview(){nicoPreview?.dispose();nicoPreview=null;}
-function closeModal(){disposeNicoPreview();svc.action('mirrorEnd');svc.ui.modal.classList.remove('open','mirror-live-preview');svc.ui.modalBody.replaceChildren();if(window.TruckCabinView)window.TruckCabinView.uiPaused=false;}
+let nicoPreview=null,vehiclePreview=null;
+function disposeNicoPreview(){nicoPreview?.dispose();nicoPreview=null;vehiclePreview?.dispose();vehiclePreview=null;}
+function closeModal(){disposeNicoPreview();svc.action('mirrorEnd');svc.ui.modal.classList.remove('open','mirror-live-preview');svc.ui.modalBody.replaceChildren();if(!svc.scoped&&window.TruckCabinView)window.TruckCabinView.uiPaused=false;}
 function optionSelect(parent,label,values,current,update){
  const wrap=svc.add(parent,'label',null,'','cab-field');svc.add(wrap,'span',null,label);
  const sel=svc.add(wrap,'select');for(const [value,title] of values){const op=new Option(title,value);sel.add(op)}sel.value=String(current);
@@ -18,7 +18,9 @@ function renderSettings(d){
   const path=document.createElementNS(tail.namespaceURI,'path');path.setAttribute('d','M0 .5 H3 Q8 .5 11 10 L15 21 Q18 27.5 24 27.5');path.setAttribute('fill','none');path.setAttribute('stroke','currentColor');path.setAttribute('stroke-width','1');path.setAttribute('vector-effect','non-scaling-stroke');tail.append(path);head.append(tail);svc.add(head,'span',null,'','cab-tab-line');
   return svc.add(f,'div',null,'','cab-tab-content');
  };
- svc.mirrorCabin.renderSettings(section,current);
+ if(svc.b.vehicles&&window.TruckVehicleSelection){const vehicles=section('選擇車輛','vehicle');TruckVehicleSelection.mount({parent:vehicles,registry:svc.b.vehicles,onChange:async id=>{if(id===svc.b.snapshot().vehicleId)return;const buttons=[...vehicles.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);try{if(await svc.action('vehicle',id)!==false)openModal('settings')}finally{buttons.forEach(b=>b.disabled=false)}}});}
+ vehiclePreview=window.TruckVehicleSettingsPreview?.mount(d,current.vehicleId)||null;
+ if(svc.mirrorCabin)svc.mirrorCabin.renderSettings(section,current);
  const soundQuality=section('音效與畫質','quality');const controls=svc.row(soundQuality);
  const sound=svc.btn(controls,current.muted?'開啟音效':'關閉音效',()=>{svc.action('sound');sound.textContent=svc.b.snapshot().muted?'開啟音效':'關閉音效'});
  svc.btn(controls,'全螢幕',()=>svc.action('fullscreen'));
@@ -83,14 +85,15 @@ function openModal(name){window.TruckMobileTouch?.release();
  if(document.querySelector('#truckMusicDialog')?.open||(window.TruckMobileModal&&document.querySelector('#truckMusicDialog.is-open')))return;
  if(name!=='settings')svc.action('mirrorEnd');
  svc.ui.interactionTuner?.setOpen(false);
- disposeNicoPreview();svc.ui.modalBody.replaceChildren();svc.ui.modal.classList.add('open');svc.ui.modal.classList.toggle('mirror-live-preview',name==='settings');if(window.TruckCabinView)window.TruckCabinView.uiPaused=true;svc.b.releaseKeys();
- window.TruckMobileModal?.prepare(name,svc.ui.modal);
+ disposeNicoPreview();svc.ui.modalBody.replaceChildren();svc.ui.modal.classList.add('open');svc.ui.modal.classList.toggle('mirror-live-preview',name==='settings');if(!svc.scoped&&window.TruckCabinView)window.TruckCabinView.uiPaused=true;svc.b.releaseKeys();
+ if(!svc.scoped)window.TruckMobileModal?.prepare(name,svc.ui.modal);
  const d=svc.ui.modalBody,s=svc.b.snapshot();
  const titles={levels:'選擇關卡',mode:'駕駛模式與教練示範',settings:'車艙與遊戲設定',help:'遊戲操作導引',mirror:'四面後照鏡精細調整',paint:'車艙顏色'};
  svc.ui.modalTitle.textContent=titles[name]||'設定';
  if(name==='levels'){
   const levels=svc.b.levels(),groups=['基本訓練','實景考題'];
   const current=levels.find(l=>+l.id===+s.level);const area=svc.add(d,'div',null,'','cab-stage-groups');
+  
   for(const name of groups){
    const items=levels.filter(l=>l.group===name);if(!items.length)continue;
    const section=svc.add(area,'details',null,'','cab-stage-group');section.open=name===current?.group;

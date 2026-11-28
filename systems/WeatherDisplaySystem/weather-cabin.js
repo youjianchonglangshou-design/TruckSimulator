@@ -5,8 +5,8 @@ let previousWeather="",pillar=null;
 function rotate(ms){if(pillar?.hanger)pillar.hanger.rotation.y=-.57+ms*2*Math.PI/pillar.rotationPeriodMs;}
 function restoreContext(){if(pillar)pillar.texture.needsUpdate=true;}
 function createPillarHud(){
- const c=document.createElement('canvas');c.width=512;c.height=700;const texture=new svc.T.CanvasTexture(c);
- texture.colorSpace=svc.T.SRGBColorSpace;texture.minFilter=svc.T.LinearFilter;texture.magFilter=svc.T.LinearFilter;
+ const H=globalThis.TruckTextTexture,c=H?H.canvas(512,700):document.createElement('canvas');if(!H){c.width=512;c.height=700;}const texture=new svc.T.CanvasTexture(c);
+ texture.colorSpace=svc.T.SRGBColorSpace;if(H)H.configure(svc.T,texture);else{texture.minFilter=svc.T.LinearFilter;texture.magFilter=svc.T.LinearFilter;}
  const hanger=new svc.T.Group();hanger.name='rc27-weather-hanging-pivot';hanger.position.set(1.53,1.92,-1.45);
  hanger.rotation.y=-.57;svc.shell.add(hanger);
  const w=.255,h=.355,rad=.012,top=h/2,eyeY=top-.028;
@@ -35,8 +35,8 @@ function updatePillar(s){
  if(!pillar||!s.environment)return;
  const time=s.environment.time,weather=s.environment.weather,key=time+'|'+weather;
  if(key===previousWeather)return;previousWeather=key;
- const {canvas:c,texture:tx}=pillar,x=c.getContext('2d');
- x.clearRect(0,0,c.width,c.height);
+ const {canvas:c,texture:tx}=pillar,x=globalThis.TruckTextTexture?.context(c)||c.getContext('2d');
+ x.clearRect(0,0,512,700);
  x.fillStyle='#102b3be6';x.beginPath();x.roundRect(12,15,488,670,36);x.fill();
  x.strokeStyle='#6ab6be';x.lineWidth=9;x.stroke();
  const night=time==='night',evening=time==='dusk',dawn=time==='dawn';

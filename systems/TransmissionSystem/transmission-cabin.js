@@ -1,21 +1,26 @@
 /* RC35 production implementation, migrated with an explicit capability list. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.TruckV6TransmissionCabin=api;})(globalThis,function(){'use strict';
 function createTransmissionSystemCabin(svc){
+const dragLocal=n=>svc.dragLocal?svc.dragLocal(n):svc.local(n);
 let shifterDrag=null,previousGear=null,previousTouch=null,knobCanvas=null,knobTexture=null;
 function ownsPointer(id){return shifterDrag?.id===id;}
 function isDragging(){return !!shifterDrag;}
 function cancelDrag(){shifterDrag=null;}
 function pickShifterKnob(e){
- if(!document.body.classList.contains('cabin3d-ready')||!svc.mounts?.root.visible||(svc.ui.modal?.classList.contains('open'))||svc.b.snapshot().view!==0)return null;
+ if(!document.body.classList.contains('cabin3d-ready')||!(svc.dragRoot||svc.mounts?.root)?.visible||(svc.ui.modal?.classList.contains('open'))||svc.b.snapshot().view!==0)return null;
  const rect=svc.canvas.getBoundingClientRect();if(!rect.width||!rect.height)return null;
  if(document.body.classList.contains('mobile-rotated')){const p=svc.b.point(e);svc.pointerNdc.set(2*p.x/svc.canvas.clientWidth-1,1-2*p.y/svc.canvas.clientHeight)}
  else svc.pointerNdc.set(2*(e.clientX-rect.left)/rect.width-1,1-2*(e.clientY-rect.top)/rect.height);
- svc.camera.updateMatrixWorld();svc.mounts.root.updateWorldMatrix(true,true);
+ svc.camera.updateMatrixWorld();(svc.dragRoot||svc.mounts.root).updateWorldMatrix(true,true);
  svc.raycaster.setFromCamera(svc.pointerNdc,svc.camera);
- return svc.raycaster.intersectObjects([svc.local('shifter-knob'),svc.local('shifter-knob-rim')].filter(Boolean),false)[0]?.object||null;
+ const targets=[dragLocal('shifter-knob'),dragLocal('shifter-knob-rim')].filter(Boolean),hit=svc.raycaster.intersectObjects(targets,false)[0]?.object;if(hit)return hit;
+ // Small screen-space tolerance around the actual rounded grip; never the whole console.
+ const pad=svc.dragTolerance||0;if(!pad)return null;
+ const w=svc.canvas.clientWidth,h=svc.canvas.clientHeight,px=(svc.pointerNdc.x+1)*w/2,py=(1-svc.pointerNdc.y)*h/2;
+ for(const o of targets){const box=o.geometry.boundingBox||(o.geometry.computeBoundingBox(),o.geometry.boundingBox);let l=Infinity,r=-Infinity,t=Infinity,b=-Infinity;for(const x of [box.min.x,box.max.x])for(const y of [box.min.y,box.max.y])for(const z of [box.min.z,box.max.z]){const q=new svc.T.Vector3(x,y,z).applyMatrix4(o.matrixWorld).project(svc.camera);if(q.z<=-1||q.z>=1)continue;const X=(q.x+1)*w/2,Y=(1-q.y)*h/2;l=Math.min(l,X);r=Math.max(r,X);t=Math.min(t,Y);b=Math.max(b,Y);}if(px>=l-pad&&px<=r+pad&&py>=t-pad&&py<=b+pad)return o;}return null;
 }
 function gearAxisInPixels(){
- const carrier=svc.local('shifter-knob-carrier'),parent=carrier?.parent;if(!parent)return null;
+ const carrier=dragLocal('shifter-knob-carrier'),parent=carrier?.parent;if(!parent)return null;
  parent.updateWorldMatrix(true,false);svc.camera.updateMatrixWorld();
  const point=y=>{const v=new svc.T.Vector3(-.045,y,.15).applyMatrix4(parent.matrixWorld).project(svc.camera);
   return {x:(v.x+1)*.5*svc.worldW,y:(1-v.y)*.5*svc.worldH};};
@@ -41,7 +46,7 @@ function moveShifterDrag(e){
  d.moved ||= Math.hypot(mx,my)>5;
  const fraction=(mx*d.axis.dx+my*d.axis.dy)/d.axis.len2;
  d.preview=svc.cl(d.initial+.170*fraction,-.085,.085);
- const knob=svc.local('shifter-knob-carrier');if(knob)knob.position.y=d.preview;
+ const knob=dragLocal('shifter-knob-carrier');if(knob)knob.position.y=d.preview;
 }
 function finishShifterDrag(e,cancel=false){
  const d=shifterDrag;if(!d||d.id!==e.pointerId)return;
@@ -51,32 +56,32 @@ function finishShifterDrag(e,cancel=false){
   const target=d.preview>.0425?1:d.preview<-.0425?-1:0;
   svc.action('gear',target); // the original game's setGear is the single authority
  }
- const knob=svc.local('shifter-knob-carrier');if(knob)knob.position.y=svc.b.snapshot().gear*.085;
+ const knob=dragLocal('shifter-knob-carrier');if(knob)knob.position.y=svc.b.snapshot().gear*.085;
 }
 function syncShifterLabels(gear){
  const touch=(globalThis.document?.body?.classList.contains('mobile-game')||!!globalThis.matchMedia?.('(pointer:coarse)')?.matches);if(gear===previousGear&&touch===previousTouch)return;previousGear=gear;previousTouch=touch;
  const knob=svc.local('shifter-label-knob-N');if(!knob)return;
  if(!knobCanvas){
-  const c=document.createElement('canvas');c.width=512;c.height=512;
-  knobCanvas=c;knobTexture=new svc.T.CanvasTexture(c);knobTexture.colorSpace=svc.T.SRGBColorSpace;
+  const H=globalThis.TruckTextTexture,c=H?H.canvas(512,512):document.createElement('canvas');if(!H){c.width=512;c.height=512;}
+  knobCanvas=c;knobTexture=new svc.T.CanvasTexture(c);knobTexture.colorSpace=svc.T.SRGBColorSpace;H?.configure(svc.T,knobTexture);
   knob.material=new svc.T.MeshBasicMaterial({map:knobTexture,transparent:true,side:svc.T.DoubleSide,toneMapped:false,depthWrite:false});
   knob.position.y-=.019; // optical centering: the RC15 original glyph reads high on the grip
  }
- const c=knobCanvas,x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);
+ const c=knobCanvas,x=globalThis.TruckTextTexture?.context(c)||c.getContext('2d');x.clearRect(0,0,512,512);
  x.font='bold 365px Arial,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillStyle='#ffffff';
  x.fillText(({1:'D',0:'N','-1':'R'})[gear]||'N',256,276);knobTexture.needsUpdate=true;
  const rows=[[1,['D','Q']],[0,['N','A']],[-1,['R','Z']]];
  for(const [g,[letter,key]] of rows){
   const label=svc.local('gear-position-'+letter);if(!label)continue;
   if(!label.userData.gearArt){
-   const art=document.createElement('canvas');art.width=512;art.height=256;
-   const tx=new svc.T.CanvasTexture(art);tx.colorSpace=svc.T.SRGBColorSpace;
+   const H=globalThis.TruckTextTexture,art=H?H.canvas(512,256):document.createElement('canvas');if(!H){art.width=512;art.height=256;}
+   const tx=new svc.T.CanvasTexture(art);tx.colorSpace=svc.T.SRGBColorSpace;H?.configure(svc.T,tx);
    label.geometry.dispose?.();label.geometry=new svc.T.PlaneGeometry(.104,.066);
    label.position.x=.082;label.position.y-=.019;label.position.z+=.003;
    label.material=new svc.T.MeshBasicMaterial({map:tx,transparent:true,side:svc.T.DoubleSide,toneMapped:false,depthWrite:false});
    label.userData.gearArt={art,tx};
   }
-  const {art,tx}=label.userData.gearArt,a=art.getContext('2d');
+  const {art,tx}=label.userData.gearArt,a=globalThis.TruckTextTexture?.context(art)||art.getContext('2d');
   a.clearRect(0,0,512,256);
   const selected=g===gear;
   a.textAlign='center';a.textBaseline='middle';

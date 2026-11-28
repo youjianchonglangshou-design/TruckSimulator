@@ -1,0 +1,2 @@
+/* Registry-bound independent K13 physics factory. Settings are captured fresh for each practice. */
+TruckVehiclePhysics.definePractice('NissanMarch_K13',(spec,options)=>Number.isInteger(options?.level)?TruckPassengerStages.create(spec,Physics,TruckRealScenes,TruckPassengerPhysics,options.level,{...options,trafficAPI:globalThis.JQDTraffic}):TruckPassengerPhysics.create(spec,TruckPassengerPhysics.practiceWorld,globalThis.Physics));

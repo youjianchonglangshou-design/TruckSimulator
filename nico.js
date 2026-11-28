@@ -44,7 +44,7 @@ function pathClear(a,b,obs,bounds){const n=Math.max(1,Math.ceil(dist(a,b)/.20));
 function create(g,obstacles,bounds,P){
  const f=g.l/2,r=0,center={...P.at(g.x,g.z,g.a,f,r),f,r};
  // The final parked vehicle can extend beyond the painted bay; avoid BOTH bodies.
- const final=P.at(g.x,g.z,g.a,11.8),parked={...final,a:g.a,b:g.a},finalBodies=[P.tractor(parked),P.trailer(parked)];
+ const final=P.at(g.x,g.z,g.a,P.kind==='passenger'?(P.spec().length-P.spec().wheelbase)/2:11.8),parked={...final,a:g.a,b:g.a},finalBodies=P.bodies?.(parked)||[P.tractor(parked),P.trailer(parked)];
  const refuges=[];
  for(let side of [-1,1])for(let extra of [.4,.6,.85,1.15,1.6,2.2,3,4,5])for(let ff of [f,f-1,f+1,f-2,f+2,2,g.l-2,g.l+2,g.l+5,g.l+7]){
   const rr=side*(g.w/2+extra),p={...P.at(g.x,g.z,g.a,ff,rr),f:ff,r:rr};
@@ -64,7 +64,7 @@ function chooseRefuge(p,sets){let best=null,bestScore=-Infinity;for(const q of p
 // Horn distance is measured from the tractor footprint, not the trailer.
 const hornRange=12;
 function requestYield(p,s,P){if(!p||p.mode!=='waiting'||clearance(p,P.tractor(s))>hornRange)return false;p.hornRequested=true;return true;}
-function update(p,s,P,dt){if(!p)return null;const bodies=[P.tractor(s),P.trailer(s)],gap=minGap(p,bodies),trigger=avoidance.trigger+Math.abs(s.v)*avoidance.lookAhead;p.vehicleGap=gap;
+function update(p,s,P,dt){if(!p)return null;const bodies=P.bodies?.(s)||[P.tractor(s),P.trailer(s)],gap=minGap(p,bodies),trigger=avoidance.trigger+Math.abs(s.v)*avoidance.lookAhead;p.vehicleGap=gap;
  if(p.mode==='waiting'&&gap>trigger&&!p.hornRequested)return p;
  p.hornRequested=false;
  p.scan-=dt;

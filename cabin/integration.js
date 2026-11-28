@@ -1,4 +1,4 @@
-/* TruckSimulator v6.0.0-alpha.REBUILD-DEV.17-P09-RC12 — real-game bridge into user-approved RC15 Three.js shell.
+/* TruckSimulator v6.0.0-alpha.REBUILD-DEV.17-P09-RC13 — real-game bridge into user-approved RC15 Three.js shell.
    No duplicate physics, stages, weather, music player, or quality controller. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id), b=window.TruckCabinBridge, M=window.TruckCabinRebuild, U=window.TruckCabinUserLayout;
@@ -21,16 +21,26 @@ let cssText,renderer,scene,camera,shell,mounts,paint,alive=true,frame=0,mirrorCu
 let appliedPixelRatio=0,contextLossCount=0,contextLost=false,contextRestoreDeadline=null,contextScale=1;
 const quality={ultra:1.5,high:1.5,balanced:1.5,safe:1.5,emergency:1.5};
 let paintingDirty=true;
-let mirrorCabin=null,radarCabin=null,car=null,carKey='',carPublisher=null,carButtons=[],carGearDrag=null,carPaint=null,carPaintRevision=-1,carMirrorMaterial=null;
+let mirrorCabin=null,radarCabin=null,car=null,carKey='',carPublisher=null,carButtons=[],carGearDrag=null,carPaint=null,carPaintRevision=-1,carMirrorMaterial=null,carMusic=null;
 const isCar=()=>b.vehicles.activeId()!=='truck';
 function vehiclePaint(){if(!carPaint)carPaint=TruckVehiclePaint.create(b.vehicles.storageFor('NissanMarch_K13'));return {get:()=>({shell:carPaint.get()||'#e9e9e4'}),set:(k,v)=>carPaint.set(v),save:()=>true,reset:()=>carPaint.reset()};}
 function currentPaint(){return isCar()?vehiclePaint():paint;}
-function releaseCar(){if(!car)return;TruckV6TransmissionCabinInstance().cancelDrag();carPublisher?.unmount();carPublisher=null;if(physicalPressed?.button?.vehicleMesh){cancelPhysicalLongPress();physicalPressed=null;}if(physicalHover?.vehicleMesh)physicalHover=null;if(carMirrorMaterial){const {face,original}=carMirrorMaterial;face.material.dispose();face.material=original;carMirrorMaterial=null;}scene.remove(car.root);car.dispose();car=null;carKey='';carButtons=[];carGearDrag=null;}
+function releaseCar(){if(!car)return;TruckV6TransmissionCabinInstance().cancelDrag();carPublisher?.unmount();carPublisher=null;if(physicalPressed?.button?.vehicleMesh){cancelPhysicalLongPress();physicalPressed=null;}if(physicalHover?.vehicleMesh)physicalHover=null;if(carMirrorMaterial){const {face,original}=carMirrorMaterial;face.material.dispose();face.material=original;carMirrorMaterial=null;}scene.remove(car.root);carMusic=null;car.dispose();car=null;carKey='';carButtons=[];carGearDrag=null;}
 function ensureCar(s){const provider=TruckVehicleCabins.get(s.vehicleId),p=K13ApprovedLayout.settings,key=s.vehicleId+':'+K13Native.eyePose(p,s.probe).outside;
  if(car&&key===carKey)return;
  if(!car)mirrorCabin.unmount();else releaseCar();
  car=provider.buildModel({inside:true,look:s.probe});carKey=key;carPaintRevision=-1;scene.add(car.root);
- const m=car.native.mounts,center=car.root.getObjectByName('k13-center-mirror').getObjectByName('mirror-live-reflection-surface');carMirrorMaterial={face:center,original:center.material};center.material=center.material.clone();
+ const m=car.native.mounts;
+ // Each K13 cabin owns its wave texture; use the same playback state and animation as the truck.
+ const musicSurfaces={};
+ carMusic=TruckV6MusicCabin.createMusicPlayerSystemCabin({displaySurfaces:musicSurfaces,isYoutubePlaying:()=>window.TruckMusic?.isYoutubePlaying?.()});
+ carMusic.createWaveSurface(T,m.root.getObjectByName('youtube-audio-screen-BLANK').parent);
+ const wave=musicSurfaces.youtubeWave;
+ // Lift only the K13 overlay just in front of the existing screen to prevent depth fighting.
+ wave.mesh.position.z+=.002;
+ // Mount disposal already covers geometry. Equipment disposal covers the additional material/texture.
+ car.native.root.userData.equipmentDisposables.push(wave.texture,wave.mesh.material);
+ const center=car.root.getObjectByName('k13-center-mirror').getObjectByName('mirror-live-reflection-surface');carMirrorMaterial={face:center,original:center.material};center.material=center.material.clone();
  const mirrorFaces=new Map([['mirror-left-upper',m.mirrorFaces.get('mirror-left-upper')],['mirror-right-upper',m.mirrorFaces.get('mirror-right-upper')],['mirror-center',center]]);
  const normalize=geo=>{normalizeMirrorUV(geo);const uv=geo.attributes.uv;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);uv.setXY(i,1-v,u)}uv.needsUpdate=true;return geo};
  carPublisher=TruckMirrorCabin.createMirrorCabin({T,mounts:{mirrorFaces},b,position,add,btn,action,makeButton:(host,id,title,fn)=>{const el=add(host,'button',id,title,'cab-physical');on(el,fn);return el},dragHints:window.TruckMirrorDragHints,normalizeMirrorUV:normalize});carPublisher.mount();carPublisher.mountControls(host);
@@ -40,6 +50,7 @@ function ensureCar(s){const provider=TruckVehicleCabins.get(s.vehicleId),p=K13Ap
 function carFrame(s,ms){const previousCar=car;ensureCar(s);const p=TruckVehicleCabins.get(s.vehicleId).cameraPose(car.settings,s.probe,true);if(camera.fov!==p.fov){camera.fov=p.fov;camera.updateProjectionMatrix();}camera.position.set(...p.eye);camera.lookAt(...p.target);shell.visible=mounts.root.visible=false;car.root.visible=s.view===0;
  vehiclePaint();if(carPaintRevision!==carPaint.revision()){TruckVehiclePaint.applyK13(car,carPaint.get(),TruckCabinPaint,true);carPaintRevision=carPaint.revision();}
  const seconds=Math.floor(s.elapsed),time=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');K13LiveDisplay.update(car,{state:{v:s.speed/3.6,hits:s.hits,gear:s.gear,steer:s.steer,braking:s.hand},hand:s.hand,devices:{distance:s.difficultyMode===0,mirrors:s.difficultyMode!==2,radar:s.radarEnabled&&s.difficultyMode===0,environment:s.environment||{}},distance:s.distance,distanceLabel:s.driveThrough||s.mission?.mountain||s.mission?.route==='out'?'迄點距離':'後端距離',time,now:ms,radarRevision:TruckRadarSystem.revision(b.getRadar()),drawRadar:c=>{const src=b.getRadar();if(src?.width){const [w,h]=TruckTextTexture.size(c);TruckTextTexture.context(c).drawImage(src,0,0,w,h)}}});
+ carMusic.updateYoutubeWave(ms);
  if(car!==previousCar||ms-lastHud>=75){updateHud(s);lastHud=ms;}carPublisher.update(s);const webglStart=performance.now();renderCabin(car.root.visible);window.TruckRenderDiagnostics?.sample('webglMs',performance.now()-webglStart);updateAnchors(s);
 }
 
@@ -505,7 +516,7 @@ function initUi(){
  ui.weatherText=ui.weather.querySelector('span');
  ui.danger=add(host,'div','cabDanger','');ui.danger.hidden=true;
  ui.help=add(host,'button','cabHelp','?','cab-control');on(ui.help,()=>openModal('help'));
- add(host,'span','cabBrand','TERMINAL DRIVER · v6.0.0-alpha.REBUILD-DEV.17-P09-RC12');
+ add(host,'span','cabBrand','TERMINAL DRIVER · v6.0.0-alpha.REBUILD-DEV.17-P09-RC13');
  const make=(id,title,func,cls='')=>{const btn=add(host,'button',id,title,'cab-physical '+cls);btn.title=title;btn.setAttribute('aria-label',title);on(btn,func);return btn};
  ui.returnCab=add(host,'button','cabReturn','上車','cab-control');on(ui.returnCab,()=>action('view'));
  // The seven physical door/wheel switches are Three.js meshes, not HTML buttons.
@@ -666,7 +677,7 @@ function tick(ms){if(window.TruckCabinStartup?.isCancelled?.()){stopFor2D();retu
 function init(){try{
  if(window.TruckCabinStartup?.isCancelled?.())return;
  init3d();initUi();resize();host.hidden=false;
- window.TruckCabinView={active:true,stopFor2D,paint,renderer,scene,camera,mounts,shell,version:'6.0.0-alpha.REBUILD-DEV.17-P09-RC12',getDeviceDiagnostics:()=>registry.status(),getQualityDiagnostics:()=>({tier:b.snapshot().quality,webglPixelRatio:appliedPixelRatio,mirrorFrames:frame,contextLossCount}),displaySurfaces,getTextDiagnostics:()=>cssText.diagnostics(),getDisplayCalibration:()=>displayCal.normalize(displayCalibration),physicalButtons,getBrakeCalibration:()=>TruckV6BrakeCabinInstance().getCalibration(),getState:()=>b.snapshot(),getPaint:()=>currentPaint().get(),getInteractionCalibration:()=>interactionCal.normalize(interactionCalibration),getWiperHitCorners:()=>wiperHitCorners()?.map(p=>({x:p.x,y:p.y,z:p.z}))||null};
+ window.TruckCabinView={active:true,stopFor2D,paint,renderer,scene,camera,mounts,shell,version:'6.0.0-alpha.REBUILD-DEV.17-P09-RC13',getDeviceDiagnostics:()=>registry.status(),getQualityDiagnostics:()=>({tier:b.snapshot().quality,webglPixelRatio:appliedPixelRatio,mirrorFrames:frame,contextLossCount}),displaySurfaces,getTextDiagnostics:()=>cssText.diagnostics(),getDisplayCalibration:()=>displayCal.normalize(displayCalibration),physicalButtons,getBrakeCalibration:()=>TruckV6BrakeCabinInstance().getCalibration(),getState:()=>b.snapshot(),getPaint:()=>currentPaint().get(),getInteractionCalibration:()=>interactionCal.normalize(interactionCalibration),getWiperHitCorners:()=>wiperHitCorners()?.map(p=>({x:p.x,y:p.y,z:p.z}))||null};
  requestAnimationFrame(tick);
  }catch(e){console.error('RC15 integration failed',e);cssText?.dispose();TruckTextTexture.disableCapture();if(renderer)renderer.dispose();document.body.classList.remove('cabin3d-ready');host.hidden=true;window.TruckCabinStartup?.fail(e);}
 }
